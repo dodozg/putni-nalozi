@@ -26,6 +26,29 @@ export interface OptimalRouteResult {
   routeSummary: string;
 }
 
+export interface MultiStopLeg {
+  index: number;
+  from: CityNode;
+  to: CityNode;
+  distanceKm: number;
+  durationMinutes: number;
+  estimatedTollEur: number;
+  highwaysUsed: string[];
+}
+
+export interface MultiStopRouteResult {
+  stops: CityNode[];
+  legs: MultiStopLeg[];
+  waypoints: RouteWaypoint[];
+  smoothPath: { lat: number; lng: number }[];
+  totalDistanceKm: number;
+  maxDistanceFromOriginKm: number;
+  totalDurationMinutes: number;
+  totalTollEur: number;
+  highwaysUsed: string[];
+  relationString: string;
+}
+
 export const CROATIAN_CITIES: CityNode[] = [
   { id: "zagreb", name: "Zagreb", lat: 45.815, lng: 15.9819, region: "Središnja Hrvatska", isHub: true },
   { id: "split", name: "Split", lat: 43.5081, lng: 16.4402, region: "Dalmacija", isHub: true },
@@ -182,6 +205,47 @@ const KNOWN_ROUTES: Record<
     toll: 11.1,
     via: [JUNCTIONS.kutina, JUNCTIONS.nova_gradiska],
     highways: ["A3"],
+  },
+  "split-dubrovnik": {
+    km: 214,
+    min: 155,
+    toll: 6.6,
+    via: [
+      JUNCTIONS.dugopolje,
+      { name: "Makarska (A1)", lat: 43.35, lng: 17.08, highway: "A1" },
+      { name: "Ploče (A1)", lat: 43.095, lng: 17.445, highway: "A1" },
+      JUNCTIONS.peljeski_most,
+    ],
+    highways: ["A1", "D8"],
+  },
+  "dubrovnik-rijeka": {
+    km: 588,
+    min: 375,
+    toll: 29.8,
+    via: [
+      JUNCTIONS.peljeski_most,
+      { name: "Ploče (A1)", lat: 43.095, lng: 17.445, highway: "A1" },
+      JUNCTIONS.dugopolje,
+      { name: "Zadar (čvor)", lat: 44.185, lng: 15.425, highway: "A1" },
+      JUNCTIONS.sveti_rok,
+      JUNCTIONS.zuta_lokva,
+      { name: "Senj (D8)", lat: 44.99, lng: 14.9, highway: "D8/A7" },
+    ],
+    highways: ["D8", "A1", "A7"],
+  },
+  "rijeka-slavonski_brod": {
+    km: 356,
+    min: 215,
+    toll: 20.4,
+    via: [
+      JUNCTIONS.delnice,
+      JUNCTIONS.bosiljevo,
+      { name: "Karlovac", lat: 45.4929, lng: 15.5553, highway: "A1" },
+      { name: "Zagreb (obilaznica)", lat: 45.775, lng: 15.98, highway: "A3" },
+      JUNCTIONS.kutina,
+      JUNCTIONS.nova_gradiska,
+    ],
+    highways: ["A6", "A1", "A3"],
   },
 };
 
@@ -404,3 +468,96 @@ export function computeOptimalRoute(
     )})`,
   };
 }
+
+export function parseRelationStops(
+  originStr: string,
+  destinationStr: string
+): string[] {
+  const splitTokens = (s: string) =>
+    (s || "")
+      .split(/\s*(?:→|->|–|—|-|,|;|\|)\s*/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+  const origParts = splitTokens(originStr);
+  const destParts = splitTokens(destinationStr);
+  const combined = [...origParts, ...destParts];
+  return combined.length >= 2 ? combined : ["Zagreb", "Split"];
+}
+
+export function computeMultiStopRoute(
+  stopNames: string[]
+): MultiStopRouteResult {
+  const validNames =
+    stopNames.filter((s) => s && s.trim()).length >= 2
+      ? stopNames.filter((s) => s && s.trim())
+      : ["Zagreb", "Split"];
+
+  const stops = validNames.map((n) => findCityNode(n));
+  const legs: MultiStopLeg[] = [];
+  const allWaypoints: RouteWaypoint[] = [];
+  const combinedSmooth: { lat: number; lng: number }[] = [];
+  const highwaySet = new Set<string>();
+
+  let totalDistanceKm = 0;
+  let totalDurationMinutes = 0;
+  let totalTollEur = 0;
+  let maxDistanceFromOriginKm = 0;
+
+  const firstStop = stops[0];
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    const from = stops[i];
+    const to = stops[i + 1];
+    const seg = computeOptimalRoute(from.name, to.name);
+
+    legs.push({
+      index: i + 1,
+      from: seg.origin,
+      to: seg.destination,
+      distanceKm: seg.distanceKm,
+      durationMinutes: seg.durationMinutes,
+      estimatedTollEur: seg.estimatedTollEur,
+      highwaysUsed: seg.highwaysUsed,
+    });
+
+    totalDistanceKm += seg.distanceKm;
+    totalDurationMinutes += seg.durationMinutes;
+    totalTollEur = Math.round((totalTollEur + seg.estimatedTollEur) * 100) / 100;
+
+    // Track furthest distance from origin for the 30 km legal rule
+    const distFromFirst =
+      from.id === firstStop.id
+        ? seg.distanceKm
+        : computeOptimalRoute(firstStop.name, to.name).distanceKm;
+    if (distFromFirst > maxDistanceFromOriginKm) {
+      maxDistanceFromOriginKm = distFromFirst;
+    }
+
+    for (const hw of seg.highwaysUsed) {
+      highwaySet.add(hw);
+    }
+
+    if (i === 0) {
+      allWaypoints.push(...seg.waypoints);
+      combinedSmooth.push(...seg.smoothPath);
+    } else {
+      allWaypoints.push(...seg.waypoints.slice(1));
+      combinedSmooth.push(...seg.smoothPath.slice(1));
+    }
+  }
+
+  return {
+    stops,
+    legs,
+    waypoints: allWaypoints,
+    smoothPath: combinedSmooth,
+    totalDistanceKm,
+    maxDistanceFromOriginKm,
+    totalDurationMinutes,
+    totalTollEur,
+    highwaysUsed: Array.from(highwaySet),
+    relationString: stops.map((s) => s.name).join(" – "),
+  };
+}
+

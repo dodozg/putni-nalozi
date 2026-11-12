@@ -3,6 +3,10 @@
 import React from "react";
 import { ArrowLeft, Printer } from "lucide-react";
 import {
+  computeMultiStopRoute,
+  parseRelationStops,
+} from "@/lib/croatian-routes";
+import {
   calculateTravelOrder,
   EXPENSE_CATEGORY_LABELS,
   formatDateHr,
@@ -40,6 +44,10 @@ export default function PrintableTravelOrder({
     },
     settings
   );
+
+  const parsedStops = parseRelationStops(order.origin, order.destination);
+  const multiTour =
+    parsedStops.length > 2 ? computeMultiStopRoute(parsedStops) : null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-100 overflow-y-auto print:static print:bg-white print:overflow-visible">
@@ -335,6 +343,50 @@ export default function PrintableTravelOrder({
               </tr>
             </tbody>
           </table>
+
+          {multiTour && (
+            <div className="mb-5">
+              <div className="text-xs font-semibold text-slate-700 mb-1.5">
+                Specifikacija višelokacijskog (kružnog) putovanja po etapama:
+              </div>
+              <table className="w-full border-collapse border border-slate-400 text-xs">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="border border-slate-400 px-2 py-1 text-left">
+                      Etapa
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1 text-left">
+                      Relacija dionice
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1 text-left">
+                      Koridor
+                    </th>
+                    <th className="border border-slate-400 px-2 py-1 text-right">
+                      Udaljenost (km)
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {multiTour.legs.map((leg) => (
+                    <tr key={leg.index}>
+                      <td className="border border-slate-400 px-2 py-1 font-mono">
+                        {leg.index}.
+                      </td>
+                      <td className="border border-slate-400 px-2 py-1">
+                        {leg.from.name} &rarr; {leg.to.name}
+                      </td>
+                      <td className="border border-slate-400 px-2 py-1 font-mono">
+                        {leg.highwaysUsed.join(" / ")}
+                      </td>
+                      <td className="border border-slate-400 px-2 py-1 text-right font-mono">
+                        {leg.distanceKm} km
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* 3. Priloženi računi */}
           <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 mb-2">

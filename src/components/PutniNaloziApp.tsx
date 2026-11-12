@@ -135,10 +135,17 @@ export default function PutniNaloziApp({
     origin: string,
     destination: string,
     distanceKm: number,
-    tollEur: number
+    tollEur: number,
+    totalDrivenKm?: number
   ) => {
     setEditingOrder(null);
-    setRoutePrefill({ origin, destination, distanceKm, tollEur });
+    setRoutePrefill({
+      origin,
+      destination,
+      distanceKm,
+      tollEur,
+      totalDrivenKm,
+    });
     setModalOpen(true);
   };
 

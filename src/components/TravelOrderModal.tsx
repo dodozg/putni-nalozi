@@ -11,8 +11,9 @@ import {
   X,
 } from "lucide-react";
 import {
-  computeOptimalRoute,
+  computeMultiStopRoute,
   CROATIAN_CITIES,
+  parseRelationStops,
 } from "@/lib/croatian-routes";
 import {
   calculateTravelOrder,
@@ -39,6 +40,7 @@ export interface RoutePrefill {
   destination: string;
   distanceKm: number;
   tollEur: number;
+  totalDrivenKm?: number;
 }
 
 interface TravelOrderModalProps {
@@ -83,7 +85,8 @@ export default function TravelOrderModal({
   const initialOdoEnd =
     order?.odometer_end ??
     (routePrefill && initialOdoStart > 0
-      ? initialOdoStart + routePrefill.distanceKm * 2
+      ? initialOdoStart +
+        (routePrefill.totalDrivenKm ?? routePrefill.distanceKm * 2)
       : 0);
 
   const [status, setStatus] = useState<OrderStatus>(order?.status || "NACRT");
@@ -151,28 +154,42 @@ export default function TravelOrderModal({
 
   const handleApplyOptimalRoute = () => {
     if (!origin.trim() || !destination.trim()) return;
-    const opt = computeOptimalRoute(origin, destination);
-    setOrigin(opt.origin.name);
-    setDestination(opt.destination.name);
-    setDistanceKm(opt.distanceKm);
+    const parsedStops = parseRelationStops(origin, destination);
+    const isMulti = parsedStops.length > 2;
+    const effectiveStops =
+      !isMulti && parsedStops[0] !== parsedStops[1]
+        ? [parsedStops[0], parsedStops[1], parsedStops[0]]
+        : parsedStops;
+
+    const tour = computeMultiStopRoute(effectiveStops);
+    setOrigin(tour.stops[0].name);
+    setDestination(
+      isMulti
+        ? tour.stops
+            .slice(1)
+            .map((s) => s.name)
+            .join(" – ")
+        : tour.stops[1].name
+    );
+    setDistanceKm(tour.maxDistanceFromOriginKm);
     if (odometerStart > 0) {
-      setOdometerEnd(odometerStart + opt.distanceKm * 2);
+      setOdometerEnd(odometerStart + tour.totalDistanceKm);
     }
-    const roundToll = round2(opt.estimatedTollEur * 2);
-    if (roundToll > 0 && !expenses.some((e) => e.category === "CESTARINA")) {
+    const toll = round2(tour.totalTollEur);
+    if (toll > 0 && !expenses.some((e) => e.category === "CESTARINA")) {
       setExpenses((prev) => [
         ...prev,
         {
           category: "CESTARINA",
-          description: `Autocesta ${opt.highwaysUsed.join("/")} ${opt.origin.name} – ${opt.destination.name} (povratno)`,
+          description: `Autocesta (${tour.highwaysUsed.join("/")}) ${tour.relationString}`,
           receipt_number: "",
           expense_date: departureAt.slice(0, 10) || todayStr,
-          amount_eur: roundToll,
+          amount_eur: toll,
         },
       ]);
     }
     setRouteHint(
-      `Optimalna ruta (${opt.highwaysUsed.join("/")}): ${opt.distanceKm} km u jednom smjeru (${opt.distanceKm * 2} km povratno), procjena cestarine ${formatEur(roundToll)}.`
+      `Ruta (${tour.legs.length} etape: ${tour.relationString}): ukupno ${tour.totalDistanceKm} km (najdalja točka ${tour.maxDistanceFromOriginKm} km), procjena cestarine ${formatEur(toll)}.`
     );
   };
 
@@ -467,14 +484,14 @@ export default function TravelOrderModal({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
-                    Odredište *
+                    Odredište (ili više gradova odvojenih crticom) *
                   </label>
                   <input
                     type="text"
                     list="croatian-cities-list"
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
-                    placeholder="npr. Split, Rijeka, Osijek..."
+                    placeholder="npr. Split – Dubrovnik – Rijeka – Slavonski Brod – Zagreb"
                     className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none"
                     required
                   />
