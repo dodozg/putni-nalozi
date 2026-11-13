@@ -57,6 +57,7 @@ export default function LocoTab({
   const [manualKm, setManualKm] = useState<number>(0);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [statusMsg, setStatusMsg] = useState("");
 
   const [filterEmployee, setFilterEmployee] = useState<string>("ALL");
 
@@ -118,11 +119,19 @@ export default function LocoTab({
   const toggleStatus = async (trip: LocoTrip) => {
     const nextStatus =
       trip.status === "ISPLACENO" ? "EVIDENTIRANO" : "ISPLACENO";
-    await apiFetch(`/api/loco-trips/${trip.id}`, {
+    const res = await apiFetch(`/api/loco-trips/${trip.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: nextStatus }),
     });
+    if (res.ok) {
+      setStatusMsg(
+        `Status vožnje #${trip.id} promijenjen u "${
+          nextStatus === "ISPLACENO" ? "Isplaćeno" : "Evidentirano"
+        }".`
+      );
+      setTimeout(() => setStatusMsg(""), 3000);
+    }
     onRefresh();
   };
 
@@ -169,6 +178,20 @@ export default function LocoTab({
         {errorMsg && (
           <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
             {errorMsg}
+          </div>
+        )}
+
+        {statusMsg && (
+          <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">
+            {statusMsg}
+          </div>
+        )}
+
+        {computedKm >= settings.min_distance_km && (
+          <div className="mb-3 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+            <strong>Porezno upozorenje:</strong> Unesena udaljenost ({computedKm} km) je{" "}
+            {settings.min_distance_km} km ili više. Za ovakve relacije po Pravilniku je
+            potreban službeni putni nalog umjesto loko vožnje.
           </div>
         )}
 

@@ -503,8 +503,8 @@ export default function ForeignTravelTab({
               <>
                 <div className="flex justify-between text-slate-700 pt-2 border-t border-slate-100">
                   <span>
-                    Tuzemne dnevnice ({calc.domesticFullCount} pune +{" "}
-                    {calc.domesticHalfCount} pola)
+                    Dopuna tuzemnom dnevnicom do ukupnog trajanja puta (čl. 8. Pravilnika:{" "}
+                    {calc.domesticFullCount} pune + {calc.domesticHalfCount} pola)
                   </span>
                   <span className="font-medium">
                     {formatEur(calc.grossDomesticEur)}

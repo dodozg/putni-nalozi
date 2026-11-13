@@ -365,10 +365,10 @@ export default function TravelOrderModal({
         {/* Body */}
         <form
           onSubmit={handleSubmit}
-          className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-200"
+          className="flex-1 overflow-y-auto lg:overflow-hidden grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-slate-200"
         >
           {/* Left 2 cols: Form inputs */}
-          <div className="lg:col-span-2 p-6 space-y-6">
+          <div className="lg:col-span-2 lg:overflow-y-auto p-6 space-y-6">
             {errorMsg && (
               <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
                 {errorMsg}
@@ -518,6 +518,25 @@ export default function TravelOrderModal({
                 </div>
               )}
 
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-slate-600">
+                  Vrijeme polaska i povratka
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const baseDate =
+                      (departureAt && departureAt.slice(0, 10)) ||
+                      new Date().toISOString().slice(0, 10);
+                    setDepartureAt(`${baseDate}T08:00`);
+                    setReturnAt(`${baseDate}T18:00`);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 transition"
+                >
+                  Jednodnevni put (08:00–18:00)
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -551,6 +570,7 @@ export default function TravelOrderModal({
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 3. Prijevozno sredstvo i kilometraža
               </h3>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -799,7 +819,7 @@ export default function TravelOrderModal({
           </div>
 
           {/* Right col: Live Croatian Tax Calculation & Legal Warnings */}
-          <div className="bg-slate-50 p-6 flex flex-col justify-between space-y-6">
+          <div className="bg-slate-50 lg:overflow-y-auto p-6 flex flex-col justify-between space-y-6">
             <div className="space-y-5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Obračun uživo (HR propisi)

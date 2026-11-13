@@ -99,6 +99,13 @@ export default function PutniNaloziApp({
 }: PutniNaloziAppProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("ORDERS");
 
+  const switchTab = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  };
+
   const [settings, setSettings] = useState<CompanySettings>(initialSettings);
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
@@ -251,7 +258,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("ORDERS")}
+            onClick={() => switchTab("ORDERS")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "ORDERS"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -275,7 +282,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("LOCO")}
+            onClick={() => switchTab("LOCO")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "LOCO"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -299,7 +306,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("FOREIGN")}
+            onClick={() => switchTab("FOREIGN")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "FOREIGN"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -314,7 +321,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("JOPPD")}
+            onClick={() => switchTab("JOPPD")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "JOPPD"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -329,7 +336,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("ANALYTICS")}
+            onClick={() => switchTab("ANALYTICS")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "ANALYTICS"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -344,7 +351,7 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
-            onClick={() => setActiveTab("MASTER")}
+            onClick={() => switchTab("MASTER")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "MASTER"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
@@ -427,7 +434,7 @@ export default function PutniNaloziApp({
           <div className="flex gap-1 mt-3 pt-2 border-t border-white/10 overflow-x-auto">
             <button
               type="button"
-              onClick={() => setActiveTab("ORDERS")}
+              onClick={() => switchTab("ORDERS")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "ORDERS"
                   ? "bg-blue-600 text-white"
@@ -438,7 +445,7 @@ export default function PutniNaloziApp({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("LOCO")}
+              onClick={() => switchTab("LOCO")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "LOCO"
                   ? "bg-blue-600 text-white"
@@ -449,7 +456,7 @@ export default function PutniNaloziApp({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("FOREIGN")}
+              onClick={() => switchTab("FOREIGN")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "FOREIGN"
                   ? "bg-blue-600 text-white"
@@ -460,7 +467,7 @@ export default function PutniNaloziApp({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("JOPPD")}
+              onClick={() => switchTab("JOPPD")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "JOPPD"
                   ? "bg-blue-600 text-white"
@@ -471,7 +478,7 @@ export default function PutniNaloziApp({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("ANALYTICS")}
+              onClick={() => switchTab("ANALYTICS")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "ANALYTICS"
                   ? "bg-blue-600 text-white"
@@ -482,7 +489,7 @@ export default function PutniNaloziApp({
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("MASTER")}
+              onClick={() => switchTab("MASTER")}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
                 activeTab === "MASTER"
                   ? "bg-blue-600 text-white"
@@ -517,7 +524,6 @@ export default function PutniNaloziApp({
                       <span className="font-semibold text-white">
                         {settings.name}
                       </span>
-                      .
                     </p>
                   </div>
 
@@ -654,7 +660,9 @@ export default function PutniNaloziApp({
                         <th className="py-3.5 px-4">Prijevoz</th>
                         <th className="py-3.5 px-4 text-right">Iznos</th>
                         <th className="py-3.5 px-4">Status</th>
-                        <th className="py-3.5 px-5 text-right">Akcije</th>
+                        <th className="py-3.5 px-4 text-right sticky right-0 bg-slate-50/95 backdrop-blur-xs shadow-[-6px_0_12px_-6px_rgba(15,23,42,0.08)]">
+                          Akcije
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -757,8 +765,8 @@ export default function PutniNaloziApp({
                                   {ORDER_STATUS_LABELS[o.status] || o.status}
                                 </span>
                               </td>
-                              <td className="py-3.5 px-5 text-right whitespace-nowrap">
-                                <div className="inline-flex items-center gap-1">
+                              <td className="py-3.5 px-4 text-right whitespace-nowrap sticky right-0 bg-white/95 backdrop-blur-xs shadow-[-6px_0_12px_-6px_rgba(15,23,42,0.08)]">
+                                <div className="inline-flex items-center gap-0.5">
                                   <button
                                     type="button"
                                     onClick={() => setSelectedMapOrderId(o.id)}
