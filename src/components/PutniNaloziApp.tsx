@@ -647,174 +647,167 @@ export default function PutniNaloziApp({
                 </div>
               </div>
 
-              {/* Orders Table */}
-              <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto lg:overflow-x-visible">
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50/80 border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                        <th className="py-3 pl-4 pr-2">Nalog</th>
-                        <th className="py-3 px-2">Zaposlenik</th>
-                        <th className="py-3 px-2">Relacija i svrha</th>
-                        <th className="py-3 px-2 hidden md:table-cell">Trajanje i prijevoz</th>
-                        <th className="py-3 px-2 text-right">Iznos i status</th>
-                        <th className="py-3 pl-2 pr-3 text-right">Akcije</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredOrders.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            className="py-14 text-center text-slate-400"
-                          >
-                            Nema putnih naloga za odabrani filter.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredOrders.map((o) => {
-                          const st = STATUS_STYLE[o.status] || STATUS_STYLE.NACRT;
-                          const isMapSelected = o.id === selectedMapOrderId;
-                          return (
-                            <tr
-                              key={o.id}
-                              className={`transition-colors ${
-                                isMapSelected
-                                  ? "bg-blue-50/50"
-                                  : "hover:bg-blue-50/25"
-                              }`}
-                            >
-                              <td className="py-3 pl-4 pr-2 whitespace-nowrap align-top">
-                                <span className="font-mono font-bold text-slate-900 text-xs">
-                                  {o.order_number}
-                                </span>
-                                <div className="text-[11px] text-slate-400 mt-0.5">
-                                  {formatDateHr(o.issue_date)}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 align-top">
-                                <div className="flex items-center gap-2">
-                                  <div className="hidden xl:flex w-7 h-7 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-800 font-bold text-[11px] items-center justify-center shrink-0">
-                                    {getInitials(o.employee_name)}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <div className="font-semibold text-slate-900 text-xs truncate max-w-[125px]">
-                                      {o.employee_name}
-                                    </div>
-                                    <div className="text-[11px] text-slate-500 truncate max-w-[125px]">
-                                      {o.employee_job_title}
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 min-w-0 align-top">
-                                <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 font-semibold text-slate-800 text-xs">
-                                  <span>{o.origin}</span>
-                                  <ArrowRight className="w-3 h-3 text-blue-500 shrink-0" />
-                                  <span className="break-words">{o.destination}</span>
-                                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono font-normal text-slate-600 shrink-0">
-                                    {o.distance_km} km
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                                  {o.purpose}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-xs text-slate-600 hidden md:table-cell align-top whitespace-nowrap">
-                                <div className="font-medium text-slate-800 text-[11px]">
-                                  {formatDateHr(o.departure_at)}
-                                  {o.return_at !== o.departure_at && (
-                                    <span className="text-slate-400 font-normal">
-                                      {" "}– {formatDateHr(o.return_at).replace(/\. \d{4}\.$/, ".")}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="inline-flex items-center gap-1 text-[11px] text-slate-500 mt-0.5">
-                                  <Car className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span>
-                                    {o.transport_type === "PRIVATNO_VOZILO"
-                                      ? "Privatno"
-                                      : o.transport_type === "SLUZBENO_VOZILO"
-                                      ? "Službeno"
-                                      : "Javni"}
-                                  </span>
-                                  {o.vehicle_license_plate && (
-                                    <span className="font-mono text-slate-400">
-                                      · {o.vehicle_license_plate}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-right whitespace-nowrap align-top">
-                                <div className="font-mono font-bold text-slate-900 tabular-nums text-xs">
-                                  {formatEur(o.total_amount_eur)}
-                                </div>
-                                <div className="mt-0.5 flex items-center justify-end gap-1.5">
-                                  {o.advance_payment_eur > 0 && (
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                      Ispl: {formatEur(o.balance_due_eur)}
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${st.badge}`}
-                                  >
-                                    <span
-                                      className={`w-1.5 h-1.5 rounded-full ${st.dot}`}
-                                    />
-                                    {ORDER_STATUS_LABELS[o.status] || o.status}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3 pl-2 pr-3 text-right whitespace-nowrap align-top">
-                                <div className="inline-flex items-center gap-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => setSelectedMapOrderId(o.id)}
-                                    className={`p-2 rounded-xl transition ${
-                                      isMapSelected
-                                        ? "bg-blue-600 text-white"
-                                        : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
-                                    }`}
-                                    title="Prikaži i animiraj rutu na karti"
-                                  >
-                                    <Compass className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openPrintOrder(o.id)}
-                                    className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition"
-                                    title="Službeni ispis / PDF"
-                                  >
-                                    <Printer className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditOrder(o.id)}
-                                    className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
-                                    title="Uredi nalog i obračun"
-                                  >
-                                    <Edit3 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleDeleteOrder(o.id, o.order_number)
-                                    }
-                                    className="p-2 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
-                                    title="Obriši nalog"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
+              {/* Orders List (2x3 card layout, zero horizontal scroll) */}
+              {filteredOrders.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200/90 shadow-sm py-14 text-center text-slate-400 text-sm">
+                  Nema putnih naloga za odabrani filter.
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredOrders.map((o) => {
+                    const st = STATUS_STYLE[o.status] || STATUS_STYLE.NACRT;
+                    const isMapSelected = o.id === selectedMapOrderId;
+                    return (
+                      <div
+                        key={o.id}
+                        className={`rounded-2xl border bg-white p-4 sm:p-5 shadow-sm transition-all ${
+                          isMapSelected
+                            ? "border-blue-400 bg-blue-50/20 ring-1 ring-blue-200"
+                            : "border-slate-200/90 hover:border-slate-300"
+                        }`}
+                      >
+                        {/* Top row: Order number, status, date | Total & Actions */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <span className="font-mono font-bold text-slate-900 text-sm sm:text-base">
+                              {o.order_number}
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${st.badge}`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${st.dot}`}
+                              />
+                              {ORDER_STATUS_LABELS[o.status] || o.status}
+                            </span>
+                            <span className="text-xs text-slate-400">
+                              Izdano {formatDateHr(o.issue_date)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 ml-auto">
+                            <div className="text-right">
+                              <div className="font-mono font-bold text-slate-900 text-base tabular-nums">
+                                {formatEur(o.total_amount_eur)}
+                              </div>
+                              {o.advance_payment_eur > 0 && (
+                                <div className="text-[11px] font-mono text-slate-500">
+                                  Za isplatu: {formatEur(o.balance_due_eur)}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="inline-flex items-center gap-0.5 pl-2 border-l border-slate-100">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMapOrderId(o.id)}
+                                className={`p-2 rounded-xl transition ${
+                                  isMapSelected
+                                    ? "bg-blue-600 text-white"
+                                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                                }`}
+                                title="Prikaži i animiraj rutu na karti"
+                              >
+                                <Compass className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openPrintOrder(o.id)}
+                                className="p-2 rounded-xl text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition"
+                                title="Službeni ispis / PDF"
+                              >
+                                <Printer className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => openEditOrder(o.id)}
+                                className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+                                title="Uredi nalog i obračun"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleDeleteOrder(o.id, o.order_number)
+                                }
+                                className="p-2 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                                title="Obriši nalog"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Bottom row (3-column grid: Zaposlenik | Relacija i svrha | Trajanje i prijevoz) */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-3 text-xs sm:text-sm">
+                          {/* 1. Zaposlenik */}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-800 font-bold text-xs flex items-center justify-center shrink-0">
+                              {getInitials(o.employee_name)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                Zaposlenik
+                              </div>
+                              <div className="font-semibold text-slate-900 truncate">
+                                {o.employee_name}
+                              </div>
+                              <div className="text-xs text-slate-500 truncate">
+                                {o.employee_job_title}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 2. Relacija i svrha */}
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Relacija i svrha
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-semibold text-slate-800">
+                              <span>{o.origin}</span>
+                              <ArrowRight className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                              <span className="break-words">{o.destination}</span>
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono font-normal text-slate-600 shrink-0">
+                                {o.distance_km} km
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                              {o.purpose}
+                            </div>
+                          </div>
+
+                          {/* 3. Trajanje i prijevoz */}
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">
+                              Trajanje i prijevoz
+                            </div>
+                            <div className="font-medium text-slate-800">
+                              {formatDateHr(o.departure_at)} – {formatDateHr(o.return_at)}
+                            </div>
+                            <div className="inline-flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                              <Car className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span>
+                                {o.transport_type === "PRIVATNO_VOZILO"
+                                  ? "Privatno vozilo"
+                                  : o.transport_type === "SLUZBENO_VOZILO"
+                                  ? "Službeno vozilo"
+                                  : "Javni prijevoz"}
+                              </span>
+                              {o.vehicle_license_plate && (
+                                <span className="font-mono text-slate-400">
+                                  · {o.vehicle_license_plate}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
 
