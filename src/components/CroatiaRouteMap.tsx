@@ -425,7 +425,9 @@ export default function CroatiaRouteMap({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-slate-900">
-                  Interaktivna karta i višelokacijski planer rute
+                  {orders.length === 1
+                    ? `Karta i animacija rute — ${orders[0].order_number}`
+                    : "Interaktivna karta i višelokacijski planer rute"}
                 </h2>
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700">
                   <Sparkles className="w-3 h-3" />
@@ -1025,7 +1027,7 @@ export default function CroatiaRouteMap({
           </div>
 
           {/* Quick-Select from Existing Travel Orders */}
-          {orders.length > 0 && (
+          {orders.length > 1 && (
             <div className="pt-3 border-t border-slate-200">
               <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
                 Prikaži rutu postojećeg naloga

@@ -116,7 +116,7 @@ export default function PutniNaloziApp({
   const [statusFilter, setStatusFilter] = useState("ALL");
 
   const [selectedMapOrderId, setSelectedMapOrderId] = useState<number | null>(
-    initialOrders[0]?.id || null
+    null
   );
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -609,15 +609,6 @@ export default function PutniNaloziApp({
                 </div>
               </div>
 
-              {/* Interactive Croatia Route Map & Driving Simulator */}
-              <CroatiaRouteMap
-                orders={orders}
-                selectedOrderId={selectedMapOrderId}
-                onSelectOrder={(o) => setSelectedMapOrderId(o.id)}
-                onCreateOrderWithRoute={openNewOrderWithRoute}
-                mileageRateEur={settings.mileage_rate}
-              />
-
               {/* Filter & Search Bar */}
               <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
                 <div className="relative flex-1 min-w-[240px]">
@@ -700,15 +691,24 @@ export default function PutniNaloziApp({
                             <div className="inline-flex items-center gap-0.5 pl-2 border-l border-slate-100">
                               <button
                                 type="button"
-                                onClick={() => setSelectedMapOrderId(o.id)}
-                                className={`p-2 rounded-xl transition ${
+                                onClick={() =>
+                                  setSelectedMapOrderId((prev) =>
+                                    prev === o.id ? null : o.id
+                                  )
+                                }
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition ${
                                   isMapSelected
-                                    ? "bg-blue-600 text-white"
-                                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "text-blue-700 bg-blue-50/80 hover:bg-blue-100"
                                 }`}
-                                title="Prikaži i animiraj rutu na karti"
+                                title={
+                                  isMapSelected
+                                    ? "Sakrij kartu rute"
+                                    : "Prikaži i animiraj rutu na karti"
+                                }
                               >
-                                <Compass className="w-4 h-4" />
+                                <Compass className="w-3.5 h-3.5" />
+                                <span>{isMapSelected ? "Sakrij kartu" : "Karta"}</span>
                               </button>
                               <button
                                 type="button"
@@ -803,6 +803,18 @@ export default function PutniNaloziApp({
                             </div>
                           </div>
                         </div>
+
+                        {/* Expandable inline route map with animation */}
+                        {isMapSelected && (
+                          <div className="mt-4 pt-4 border-t border-blue-100">
+                            <CroatiaRouteMap
+                              orders={[o]}
+                              selectedOrderId={o.id}
+                              onCreateOrderWithRoute={openNewOrderWithRoute}
+                              mileageRateEur={settings.mileage_rate}
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
