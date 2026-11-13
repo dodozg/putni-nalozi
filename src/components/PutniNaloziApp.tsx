@@ -3,14 +3,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  BarChart3,
   Briefcase,
   Building2,
   Car,
   CheckCircle2,
   Compass,
   Edit3,
+  FileSpreadsheet,
   FileText,
-  MapPin,
+  Globe,
   Navigation,
   Plus,
   Printer,
@@ -35,13 +37,22 @@ import type {
   TravelOrder,
   Vehicle,
 } from "@/lib/types";
+import AnalyticsTab from "./AnalyticsTab";
 import CroatiaRouteMap from "./CroatiaRouteMap";
+import ForeignTravelTab from "./ForeignTravelTab";
+import JoppdTab from "./JoppdTab";
 import LocoTab from "./LocoTab";
 import MasterDataTab from "./MasterDataTab";
 import PrintableTravelOrder from "./PrintableTravelOrder";
 import TravelOrderModal, { type RoutePrefill } from "./TravelOrderModal";
 
-type ActiveTab = "ORDERS" | "LOCO" | "MASTER";
+type ActiveTab =
+  | "ORDERS"
+  | "FOREIGN"
+  | "LOCO"
+  | "JOPPD"
+  | "ANALYTICS"
+  | "MASTER";
 
 interface PutniNaloziAppProps {
   initialSettings: CompanySettings;
@@ -288,6 +299,51 @@ export default function PutniNaloziApp({
 
           <button
             type="button"
+            onClick={() => setActiveTab("FOREIGN")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "FOREIGN"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "text-slate-300 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Globe className="w-4 h-4" />
+              Inozemni nalozi
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("JOPPD")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "JOPPD"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "text-slate-300 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <FileSpreadsheet className="w-4 h-4" />
+              JOPPD obrazac
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("ANALYTICS")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "ANALYTICS"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
+                : "text-slate-300 hover:bg-white/5 hover:text-white"
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <BarChart3 className="w-4 h-4" />
+              Analitika i izvoz
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("MASTER")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
               activeTab === "MASTER"
@@ -390,6 +446,39 @@ export default function PutniNaloziApp({
               }`}
             >
               Loko vožnja ({locoTrips.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("FOREIGN")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
+                activeTab === "FOREIGN"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300"
+              }`}
+            >
+              Inozemni nalozi
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("JOPPD")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
+                activeTab === "JOPPD"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300"
+              }`}
+            >
+              JOPPD obrazac
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("ANALYTICS")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
+                activeTab === "ANALYTICS"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-300"
+              }`}
+            >
+              Analitika i izvoz
             </button>
             <button
               type="button"
@@ -728,6 +817,32 @@ export default function PutniNaloziApp({
               vehicles={vehicles}
               settings={settings}
               onRefresh={refreshAll}
+            />
+          )}
+
+          {activeTab === "FOREIGN" && (
+            <ForeignTravelTab
+              companyName={settings.name}
+              companyOib={settings.oib}
+              companyAddress={settings.address}
+            />
+          )}
+
+          {activeTab === "JOPPD" && (
+            <JoppdTab
+              orders={orders}
+              locoTrips={locoTrips}
+              employees={employees}
+              settings={settings}
+            />
+          )}
+
+          {activeTab === "ANALYTICS" && (
+            <AnalyticsTab
+              orders={orders}
+              locoTrips={locoTrips}
+              employees={employees}
+              vehicles={vehicles}
             />
           )}
 
