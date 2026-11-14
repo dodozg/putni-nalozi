@@ -110,16 +110,20 @@ function formatMonthLabel(monthKey: string): string {
   return `${name} ${year}`;
 }
 
-function escapeCsvCell(value: string): string {
-  if (
-    value.includes(";") ||
-    value.includes('"') ||
-    value.includes("\n") ||
-    value.includes("\r")
-  ) {
-    return `"${value.replace(/"/g, '""')}"`;
+export function escapeCsvCell(value: string): string {
+  let str = String(value ?? "");
+  if (/^[=+\-@]/.test(str) && !/^-\d+([.,]\d+)?$/.test(str)) {
+    str = `'${str}`;
   }
-  return value;
+  if (
+    str.includes(";") ||
+    str.includes('"') ||
+    str.includes("\n") ||
+    str.includes("\r")
+  ) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }
 
 function formatCsvNumber(value: number): string {

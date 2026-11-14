@@ -9,17 +9,21 @@ import {
   Car,
   CheckCircle2,
   Compass,
+  Database,
   Edit3,
   FileSpreadsheet,
   FileText,
   Globe,
+  LogOut,
   Navigation,
   Plus,
   Printer,
   Route,
   Search,
+  Shield,
   ShieldCheck,
   Trash2,
+  UserCheck,
   Wallet,
   X,
 } from "lucide-react";
@@ -31,21 +35,30 @@ import {
   TRANSPORT_TYPE_LABELS,
 } from "@/lib/croatian-rules";
 import { apiFetch } from "@/lib/demo-seed";
-import type {
-  CompanySettings,
-  Employee,
-  LocoTrip,
-  TravelOrder,
-  Vehicle,
+import {
+  ALL_PERMISSIONS,
+  type AuthSession,
+  type Company,
+  type CompanySettings,
+  type Employee,
+  type LocoTrip,
+  type OrderStatus,
+  type TravelOrder,
+  type UserPermissions,
+  type UserRole,
+  type Vehicle,
 } from "@/lib/types";
 import AnalyticsTab from "./AnalyticsTab";
+import BackupRestoreTab from "./BackupRestoreTab";
 import CroatiaRouteMap from "./CroatiaRouteMap";
 import ForeignTravelTab from "./ForeignTravelTab";
 import JoppdTab from "./JoppdTab";
 import LocoTab from "./LocoTab";
+import LoginScreen from "./LoginScreen";
 import MasterDataTab from "./MasterDataTab";
 import PrintableTravelOrder from "./PrintableTravelOrder";
 import TravelOrderModal from "./TravelOrderModal";
+import UserCompanyAdminTab from "./UserCompanyAdminTab";
 
 type ActiveTab =
   | "ORDERS"
@@ -53,7 +66,9 @@ type ActiveTab =
   | "LOCO"
   | "JOPPD"
   | "ANALYTICS"
-  | "MASTER";
+  | "MASTER"
+  | "ADMIN"
+  | "BACKUP";
 
 interface PutniNaloziAppProps {
   initialSettings: CompanySettings;
@@ -106,6 +121,28 @@ const TAB_META: Record<ActiveTab, { title: string; subtitle: string }> = {
     subtitle:
       "Matični podaci društva, zaposlenici, vozni park i neoporezive stope",
   },
+  ADMIN: {
+    title: "Korisnici, tvrtke i ovlasti",
+    subtitle:
+      "Upravljanje korisničkim računima, tvrtkama i granularnim pravima pristupa",
+  },
+  BACKUP: {
+    title: "Sigurnosna kopija (Backup & Restore)",
+    subtitle:
+      "Izrada sigurnosne kopije podataka tvrtke i vraćanje podataka iz JSON arhive",
+  },
+};
+
+const ROLE_HEADER_LABELS: Record<UserRole, string> = {
+  global_admin: "Globalni Admin",
+  company_admin: "Administrator tvrtke",
+  user: "Korisnik",
+};
+
+const ROLE_HEADER_BADGE: Record<UserRole, string> = {
+  global_admin: "bg-purple-50 text-purple-700 border-purple-200",
+  company_admin: "bg-blue-50 text-blue-700 border-blue-200",
+  user: "bg-slate-100 text-slate-700 border-slate-200",
 };
 
 const STATUS_STYLE: Record<string, { badge: string; dot: string }> = {
@@ -143,6 +180,10 @@ export default function PutniNaloziApp({
   initialOrders,
   initialLocoTrips,
 }: PutniNaloziAppProps) {
+  const [authChecking, setAuthChecking] = useState(true);
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [allCompanies, setAllCompanies] = useState<Company[]>([]);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>("ORDERS");
 
   const switchTab = (tab: ActiveTab) => {
@@ -169,31 +210,117 @@ export default function PutniNaloziApp({
   const [editingOrder, setEditingOrder] = useState<TravelOrder | null>(null);
   const [printingOrder, setPrintingOrder] = useState<TravelOrder | null>(null);
 
+  // Effective permissions based on user role
+  const effectivePermissions: UserPermissions = useMemo(() => {
+    if (!session) return ALL_PERMISSIONS;
+    if (
+      session.user.role === "global_admin" ||
+      session.user.role === "company_admin"
+    ) {
+      return ALL_PERMISSIONS;
+    }
+    return {
+      ...ALL_PERMISSIONS,
+      ...(session.user.permissions || {}),
+    };
+  }, [session]);
+
+  const canAccessAdminTab =
+    session?.user.role === "global_admin" ||
+    session?.user.role === "company_admin";
+
   const refreshAll = useCallback(async () => {
-    const [sRes, eRes, vRes, oRes, lRes] = await Promise.all([
+    const [sRes, eRes, vRes, oRes, lRes, meRes] = await Promise.all([
       apiFetch("/api/settings"),
       apiFetch("/api/employees"),
       apiFetch("/api/vehicles"),
       apiFetch("/api/travel-orders"),
       apiFetch("/api/loco-trips"),
+      apiFetch("/api/auth/me"),
     ]);
     if (sRes.ok) setSettings(await sRes.json());
     if (eRes.ok) setEmployees(await eRes.json());
     if (vRes.ok) setVehicles(await vRes.json());
     if (oRes.ok) setOrders(await oRes.json());
     if (lRes.ok) setLocoTrips(await lRes.json());
+    if (meRes.ok) {
+      const meData = (await meRes.json()) as AuthSession;
+      setSession(meData);
+      if (meData.companies) {
+        setAllCompanies(meData.companies);
+      } else if (meData.user.role === "global_admin") {
+        const cRes = await apiFetch("/api/companies");
+        if (cRes.ok) setAllCompanies(await cRes.json());
+      }
+    }
   }, []);
 
+  // Initial auth check on mount
   useEffect(() => {
-    refreshAll();
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await apiFetch("/api/auth/me");
+        if (res.ok && mounted) {
+          const meData = (await res.json()) as AuthSession;
+          setSession(meData);
+          if (meData.companies) {
+            setAllCompanies(meData.companies);
+          } else if (meData.user.role === "global_admin") {
+            const cRes = await apiFetch("/api/companies");
+            if (cRes.ok) setAllCompanies(await cRes.json());
+          }
+          await refreshAll();
+        }
+      } finally {
+        if (mounted) setAuthChecking(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [refreshAll]);
 
+  const handleLoginSuccess = async (newSession: AuthSession) => {
+    setSession(newSession);
+    if (newSession.companies) {
+      setAllCompanies(newSession.companies);
+    } else if (newSession.user.role === "global_admin") {
+      const cRes = await apiFetch("/api/companies");
+      if (cRes.ok) setAllCompanies(await cRes.json());
+    }
+    setActiveTab("ORDERS");
+    await refreshAll();
+  };
+
+  const handleLogout = async () => {
+    await apiFetch("/api/auth/logout", { method: "POST" });
+    setSession(null);
+    setSelectedMapOrderId(null);
+  };
+
+  const handleSwitchCompany = async (companyId: number) => {
+    const res = await apiFetch("/api/auth/me", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activeCompanyId: companyId }),
+    });
+    if (res.ok) {
+      const updatedSession = (await res.json()) as AuthSession;
+      setSession(updatedSession);
+      setSelectedMapOrderId(null);
+      await refreshAll();
+    }
+  };
+
   const openNewOrder = () => {
+    if (!effectivePermissions.canManageTravelOrders) return;
     setEditingOrder(null);
     setModalOpen(true);
   };
 
   const openEditOrder = async (id: number) => {
+    if (!effectivePermissions.canManageTravelOrders) return;
     const res = await apiFetch(`/api/travel-orders/${id}`);
     if (res.ok) {
       const fullOrder = await res.json();
@@ -210,10 +337,28 @@ export default function PutniNaloziApp({
     }
   };
 
+  const handleQuickStatusChange = async (
+    order: TravelOrder,
+    nextStatus: OrderStatus
+  ) => {
+    if (!effectivePermissions.canApproveTravelOrders) return;
+    const res = await apiFetch(`/api/travel-orders/${order.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: nextStatus }),
+    });
+    if (res.ok) {
+      await refreshAll();
+    }
+  };
+
   const handleDeleteOrder = async (id: number, orderNumber: string) => {
+    if (!effectivePermissions.canManageTravelOrders) return;
     if (!confirm(`Jeste li sigurni da želite obrisati nalog ${orderNumber}?`))
       return;
-    const res = await apiFetch(`/api/travel-orders/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/travel-orders/${id}`, {
+      method: "DELETE",
+    });
     if (res.ok) {
       if (selectedMapOrderId === id) {
         setSelectedMapOrderId(null);
@@ -222,63 +367,112 @@ export default function PutniNaloziApp({
     }
   };
 
-  const navGroups: NavGroupConfig[] = useMemo(
-    () => [
+  const navGroups: NavGroupConfig[] = useMemo(() => {
+    const groups: NavGroupConfig[] = [];
+
+    const evidencijaItems: NavItemConfig[] = [
       {
-        title: "Evidencija i obračun",
-        items: [
-          {
-            id: "ORDERS",
-            label: "Putni nalozi",
-            icon: FileText,
-            badge: orders.length,
-          },
-          {
-            id: "FOREIGN",
-            label: "Inozemni nalozi",
-            icon: Globe,
-          },
-          {
-            id: "LOCO",
-            label: "Loko vožnja",
-            icon: Navigation,
-            badge: locoTrips.length,
-          },
-        ],
+        id: "ORDERS",
+        label: "Putni nalozi",
+        icon: FileText,
+        badge: orders.length,
       },
       {
+        id: "FOREIGN",
+        label: "Inozemni nalozi",
+        icon: Globe,
+      },
+    ];
+    if (effectivePermissions.canManageLoco) {
+      evidencijaItems.push({
+        id: "LOCO",
+        label: "Loko vožnja",
+        icon: Navigation,
+        badge: locoTrips.length,
+      });
+    }
+    groups.push({
+      title: "Evidencija i obračun",
+      items: evidencijaItems,
+    });
+
+    const reportItems: NavItemConfig[] = [];
+    if (effectivePermissions.canManageJoppd) {
+      reportItems.push({
+        id: "JOPPD",
+        label: "JOPPD obrazac",
+        icon: FileSpreadsheet,
+      });
+    }
+    if (effectivePermissions.canViewAnalytics) {
+      reportItems.push({
+        id: "ANALYTICS",
+        label: "Analitika i izvoz",
+        icon: BarChart3,
+      });
+    }
+    if (reportItems.length > 0) {
+      groups.push({
         title: "Izvještaji i Porezna",
-        items: [
-          {
-            id: "JOPPD",
-            label: "JOPPD obrazac",
-            icon: FileSpreadsheet,
-          },
-          {
-            id: "ANALYTICS",
-            label: "Analitika i izvoz",
-            icon: BarChart3,
-          },
-        ],
-      },
-      {
-        title: "Postavke",
-        items: [
-          {
-            id: "MASTER",
-            label: "Tvrtka, radnici i vozila",
-            icon: Building2,
-          },
-        ],
-      },
-    ],
-    [orders.length, locoTrips.length]
-  );
+        items: reportItems,
+      });
+    }
+
+    const adminItems: NavItemConfig[] = [];
+    if (effectivePermissions.canManageMasterData) {
+      adminItems.push({
+        id: "MASTER",
+        label: "Tvrtka, radnici i vozila",
+        icon: Building2,
+      });
+    }
+    if (canAccessAdminTab) {
+      adminItems.push({
+        id: "ADMIN",
+        label:
+          session?.user.role === "global_admin"
+            ? "Tvrtke, korisnici i prava"
+            : "Korisnici i ovlasti",
+        icon: Shield,
+      });
+    }
+    if (effectivePermissions.canBackupRestore) {
+      adminItems.push({
+        id: "BACKUP",
+        label: "Sigurnosna kopija (Backup)",
+        icon: Database,
+      });
+    }
+    if (adminItems.length > 0) {
+      groups.push({
+        title: "Upravljanje i sustav",
+        items: adminItems,
+      });
+    }
+
+    return groups;
+  }, [
+    orders.length,
+    locoTrips.length,
+    effectivePermissions,
+    canAccessAdminTab,
+    session?.user.role,
+  ]);
 
   const flatNavItems = useMemo(
     () => navGroups.flatMap((group) => group.items),
     [navGroups]
   );
+
+  // Ensure activeTab is allowed for current user
+  useEffect(() => {
+    if (
+      flatNavItems.length > 0 &&
+      !flatNavItems.some((item) => item.id === activeTab)
+    ) {
+      setActiveTab("ORDERS");
+    }
+  }, [flatNavItems, activeTab]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -326,7 +520,27 @@ export default function PutniNaloziApp({
     };
   }, [orders]);
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex items-center justify-center p-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center animate-pulse">
+            <Briefcase className="w-5 h-5 text-white" />
+          </div>
+          <div className="text-xs font-medium text-slate-400">
+            Provjera prijave i učitavanje sustava Putni Nalozi...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
   const activeMeta = TAB_META[activeTab];
+  const isGlobalAdmin = session.user.role === "global_admin";
 
   return (
     <div
@@ -346,7 +560,7 @@ export default function PutniNaloziApp({
               Putni Nalozi HR
             </div>
             <p className="text-[11px] text-slate-400 truncate">
-              Obračun po propisima RH
+              {settings.name}
             </p>
           </div>
         </div>
@@ -432,13 +646,29 @@ export default function PutniNaloziApp({
           </div>
         </div>
 
-        {/* Company Footer */}
-        <div className="px-5 py-3.5 border-t border-white/10 text-xs bg-slate-950/80">
-          <div className="font-medium text-slate-100 truncate">
-            {settings.name}
+        {/* User & Company Footer */}
+        <div className="px-4 py-3.5 border-t border-white/10 text-xs bg-slate-950/80 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <div className="font-semibold text-slate-100 truncate">
+                {session.user.full_name}
+              </div>
+              <div className="text-[11px] text-slate-400 truncate">
+                {ROLE_HEADER_LABELS[session.user.role]}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Odjava iz sustava"
+              className="inline-flex items-center gap-1 rounded-lg bg-white/10 hover:bg-red-500/20 hover:text-red-300 px-2.5 py-1.5 text-[11px] font-medium text-slate-200 transition cursor-pointer shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Odjava</span>
+            </button>
           </div>
-          <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-            OIB: {settings.oib}
+          <div className="pt-2 border-t border-white/5 text-[11px] text-slate-400 truncate">
+            {settings.name} · OIB: {settings.oib}
           </div>
         </div>
       </aside>
@@ -446,31 +676,64 @@ export default function PutniNaloziApp({
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="no-print lg:hidden bg-slate-950 text-slate-100 px-4 py-3 sticky top-0 z-30 border-b border-slate-800">
-          <div className="flex items-center justify-between gap-3">
+        <header className="no-print lg:hidden bg-slate-950 text-slate-100 px-4 py-3 sticky top-0 z-30 border-b border-slate-800 space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
                 <Briefcase className="w-4 h-4 text-white" />
               </div>
               <div className="min-w-0">
                 <div className="font-semibold text-sm text-white truncate">
-                  Putni Nalozi HR
+                  {settings.name}
                 </div>
                 <div className="text-[11px] text-slate-400 truncate">
-                  {settings.name}
+                  {session.user.full_name} ·{" "}
+                  {ROLE_HEADER_LABELS[session.user.role]}
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={openNewOrder}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white shrink-0 transition cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Novi nalog</span>
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {effectivePermissions.canManageTravelOrders && (
+                <button
+                  type="button"
+                  onClick={openNewOrder}
+                  className="inline-flex items-center gap-1 rounded-xl bg-blue-600 hover:bg-blue-700 px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Novi</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-1 rounded-xl bg-slate-800 hover:bg-slate-700 px-2.5 py-1.5 text-xs font-medium text-slate-200 transition cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Odjava</span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 mt-3 pt-2.5 border-t border-white/10 overflow-x-auto pb-0.5">
+
+          {isGlobalAdmin && allCompanies.length > 0 && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-[11px] text-slate-400 shrink-0">
+                Aktivna tvrtka:
+              </span>
+              <select
+                value={session.activeCompanyId}
+                onChange={(e) => handleSwitchCompany(Number(e.target.value))}
+                className="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs text-white"
+              >
+                {allCompanies.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} (OIB: {c.oib})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1.5 pt-2 border-t border-white/10 overflow-x-auto pb-0.5">
             {flatNavItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -493,7 +756,7 @@ export default function PutniNaloziApp({
         </header>
 
         {/* Sticky Top Header Bar (Desktop) */}
-        <header className="no-print hidden lg:flex sticky top-0 z-20 items-center justify-between gap-4 bg-white/85 backdrop-blur-md border-b border-slate-200/80 px-8 py-3.5">
+        <header className="no-print hidden lg:flex sticky top-0 z-20 items-center justify-between gap-4 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-3.5">
           <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <h1 className="text-base font-semibold tracking-tight text-slate-900 truncate">
@@ -510,20 +773,70 @@ export default function PutniNaloziApp({
           </div>
 
           <div className="flex items-center gap-2.5 shrink-0">
-            <div
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 max-w-[220px]"
-              title={`${settings.name} (OIB: ${settings.oib})`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{settings.name}</span>
+            {/* Active Company Switcher (for Global Admin) or Static Badge */}
+            {isGlobalAdmin && allCompanies.length > 0 ? (
+              <div className="inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50/60 px-3 py-1.5 text-xs">
+                <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                <span className="text-purple-900 font-medium whitespace-nowrap">
+                  Aktivna tvrtka:
+                </span>
+                <select
+                  value={session.activeCompanyId}
+                  onChange={(e) => handleSwitchCompany(Number(e.target.value))}
+                  aria-label="Odabir aktivne tvrtke"
+                  className="bg-white rounded-lg border border-purple-200 px-2 py-0.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-500 cursor-pointer"
+                >
+                  {allCompanies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 max-w-[220px]"
+                title={`${settings.name} (OIB: ${settings.oib})`}
+              >
+                <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{settings.name}</span>
+              </div>
+            )}
+
+            {/* Logged-in User & Role Badge */}
+            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs">
+              <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+                {session.user.full_name}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                  ROLE_HEADER_BADGE[session.user.role]
+                }`}
+              >
+                <UserCheck className="w-3 h-3" />
+                {ROLE_HEADER_LABELS[session.user.role]}
+              </span>
             </div>
+
+            {effectivePermissions.canManageTravelOrders && (
+              <button
+                type="button"
+                onClick={openNewOrder}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3.5 py-2 text-xs font-semibold shadow-xs transition cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Novi putni nalog</span>
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={openNewOrder}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3.5 py-2 text-xs font-semibold shadow-xs transition cursor-pointer"
+              onClick={handleLogout}
+              title="Odjava iz sustava"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 px-3 py-2 text-xs font-medium transition cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Novi putni nalog</span>
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Odjava</span>
             </button>
           </div>
         </header>
@@ -559,7 +872,7 @@ export default function PutniNaloziApp({
                     {kpis.count}
                   </div>
                   <div className="mt-1 text-xs text-slate-400">
-                    Ukupno evidentiranih naloga
+                    Ukupno evidentiranih naloga ({settings.name})
                   </div>
                 </div>
 
@@ -693,7 +1006,7 @@ export default function PutniNaloziApp({
                 </div>
               </div>
 
-              {/* Order List (Responsive 2-Row Card Layout, NO table, NO horizontal scroll) */}
+              {/* Order List */}
               {filteredOrders.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs py-14 px-6 text-center space-y-3">
                   <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
@@ -743,14 +1056,39 @@ export default function PutniNaloziApp({
                             <span className="font-mono font-bold text-slate-900 text-sm sm:text-[15px] tracking-tight">
                               {o.order_number}
                             </span>
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${st.badge}`}
-                            >
+
+                            {effectivePermissions.canApproveTravelOrders ? (
+                              <select
+                                value={o.status}
+                                onChange={(e) =>
+                                  handleQuickStatusChange(
+                                    o,
+                                    e.target.value as OrderStatus
+                                  )
+                                }
+                                title="Promijeni status naloga"
+                                className={`rounded-full border px-2.5 py-0.5 text-xs font-medium cursor-pointer ${st.badge}`}
+                              >
+                                {Object.entries(ORDER_STATUS_LABELS).map(
+                                  ([k, label]) => (
+                                    <option key={k} value={k}>
+                                      {label}
+                                    </option>
+                                  )
+                                )}
+                              </select>
+                            ) : (
                               <span
-                                className={`w-1.5 h-1.5 rounded-full ${st.dot}`}
-                              />
-                              {ORDER_STATUS_LABELS[o.status] || o.status}
-                            </span>
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${st.badge}`}
+                                title="Nemate ovlasti za odobravanje statusa"
+                              >
+                                <span
+                                  className={`w-1.5 h-1.5 rounded-full ${st.dot}`}
+                                />
+                                {ORDER_STATUS_LABELS[o.status] || o.status}
+                              </span>
+                            )}
+
                             <span className="text-xs text-slate-500">
                               Izdano {formatDateHr(o.issue_date)}
                             </span>
@@ -800,27 +1138,35 @@ export default function PutniNaloziApp({
                                 </span>
                               </button>
 
-                              <button
-                                type="button"
-                                onClick={() => openEditOrder(o.id)}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
-                                title="Uredi"
-                              >
-                                <Edit3 className="w-3.5 h-3.5 shrink-0" />
-                                <span className="hidden sm:inline">Uredi</span>
-                              </button>
+                              {effectivePermissions.canManageTravelOrders && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditOrder(o.id)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                                    title="Uredi"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="hidden sm:inline">
+                                      Uredi
+                                    </span>
+                                  </button>
 
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleDeleteOrder(o.id, o.order_number)
-                                }
-                                className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
-                                title="Obriši"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 shrink-0" />
-                                <span className="hidden md:inline">Obriši</span>
-                              </button>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDeleteOrder(o.id, o.order_number)
+                                    }
+                                    className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:bg-red-50 hover:text-red-600 transition cursor-pointer"
+                                    title="Obriši"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="hidden md:inline">
+                                      Obriši
+                                    </span>
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1000,14 +1346,16 @@ export default function PutniNaloziApp({
 
                               {/* Quick Footer Actions */}
                               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => openEditOrder(o.id)}
-                                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-800 px-3 py-2 text-xs font-semibold transition cursor-pointer"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                  <span>Uredi obračun i rutu</span>
-                                </button>
+                                {effectivePermissions.canManageTravelOrders && (
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditOrder(o.id)}
+                                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 text-slate-800 px-3 py-2 text-xs font-semibold transition cursor-pointer"
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                    <span>Uredi obračun i rutu</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => openPrintOrder(o.id)}
@@ -1028,7 +1376,7 @@ export default function PutniNaloziApp({
             </>
           )}
 
-          {activeTab === "LOCO" && (
+          {activeTab === "LOCO" && effectivePermissions.canManageLoco && (
             <LocoTab
               trips={locoTrips}
               employees={employees}
@@ -1046,7 +1394,7 @@ export default function PutniNaloziApp({
             />
           )}
 
-          {activeTab === "JOPPD" && (
+          {activeTab === "JOPPD" && effectivePermissions.canManageJoppd && (
             <JoppdTab
               orders={orders}
               locoTrips={locoTrips}
@@ -1055,23 +1403,45 @@ export default function PutniNaloziApp({
             />
           )}
 
-          {activeTab === "ANALYTICS" && (
-            <AnalyticsTab
-              orders={orders}
-              locoTrips={locoTrips}
-              employees={employees}
-              vehicles={vehicles}
+          {activeTab === "ANALYTICS" &&
+            effectivePermissions.canViewAnalytics && (
+              <AnalyticsTab
+                orders={orders}
+                locoTrips={locoTrips}
+                employees={employees}
+                vehicles={vehicles}
+              />
+            )}
+
+          {activeTab === "MASTER" &&
+            effectivePermissions.canManageMasterData && (
+              <MasterDataTab
+                settings={settings}
+                employees={employees}
+                vehicles={vehicles}
+                onRefresh={refreshAll}
+              />
+            )}
+
+          {activeTab === "ADMIN" && canAccessAdminTab && (
+            <UserCompanyAdminTab
+              session={session}
+              onSwitchCompany={handleSwitchCompany}
+              onRefreshData={refreshAll}
             />
           )}
 
-          {activeTab === "MASTER" && (
-            <MasterDataTab
-              settings={settings}
-              employees={employees}
-              vehicles={vehicles}
-              onRefresh={refreshAll}
-            />
-          )}
+          {activeTab === "BACKUP" &&
+            effectivePermissions.canBackupRestore && (
+              <BackupRestoreTab
+                session={session}
+                employees={employees}
+                vehicles={vehicles}
+                orders={orders}
+                locoTrips={locoTrips}
+                onRefresh={refreshAll}
+              />
+            )}
         </main>
       </div>
 
@@ -1083,6 +1453,7 @@ export default function PutniNaloziApp({
           settings={settings}
           employees={employees}
           vehicles={vehicles}
+          canApprove={effectivePermissions.canApproveTravelOrders}
           onClose={() => setModalOpen(false)}
           onSaved={() => {
             setModalOpen(false);

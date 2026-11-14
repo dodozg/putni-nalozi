@@ -38,7 +38,7 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function escapeXml(value: string): string {
+export function escapeXml(value: string): string {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -47,8 +47,11 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function escapeCsvCell(value: string | number): string {
-  const str = String(value ?? "");
+export function escapeCsvCell(value: string | number): string {
+  let str = String(value ?? "");
+  if (/^[=+\-@]/.test(str) && !/^-\d+([.,]\d+)?$/.test(str)) {
+    str = `'${str}`;
+  }
   if (str.includes(";") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
     return `"${str.replace(/"/g, '""')}"`;
   }

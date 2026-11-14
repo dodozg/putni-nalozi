@@ -272,6 +272,9 @@ export function calculateTravelOrder(
     if (hasOdometer) {
       totalKm = round2(input.odometer_end - input.odometer_start);
     } else {
+      if ((input.distance_km || 0) > 0) {
+        totalKm = round2(input.distance_km);
+      }
       warnings.push({
         severity: "warning",
         code: "MISSING_ODOMETER",

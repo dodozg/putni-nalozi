@@ -59,6 +59,7 @@ interface TravelOrderModalProps {
   settings: CompanySettings;
   employees: Employee[];
   vehicles: Vehicle[];
+  canApprove?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -80,6 +81,7 @@ export default function TravelOrderModal({
   settings,
   employees,
   vehicles,
+  canApprove = true,
   onClose,
   onSaved,
 }: TravelOrderModalProps) {
@@ -514,17 +516,37 @@ export default function TravelOrderModal({
                       <label className={labelClass}>Status naloga</label>
                       <select
                         value={status}
+                        disabled={!canApprove}
                         onChange={(e) =>
                           setStatus(e.target.value as OrderStatus)
                         }
-                        className={inputClass}
+                        className={`${inputClass} disabled:bg-slate-100 disabled:text-slate-500`}
+                        title={
+                          !canApprove
+                            ? "Nemate ovlasti za odobravanje i isplatu naloga"
+                            : undefined
+                        }
                       >
                         {Object.entries(ORDER_STATUS_LABELS).map(([k, v]) => (
-                          <option key={k} value={k}>
+                          <option
+                            key={k}
+                            value={k}
+                            disabled={
+                              !canApprove &&
+                              k !== "NACRT" &&
+                              k !== order?.status
+                            }
+                          >
                             {v}
                           </option>
                         ))}
                       </select>
+                      {!canApprove && (
+                        <p className="text-[10px] text-amber-600 mt-1">
+                          Samo korisnici s ovlasti odobravanja mogu mijenjati
+                          status u Odobren/Isplaćen.
+                        </p>
+                      )}
                     </div>
                   </div>
 

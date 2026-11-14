@@ -17,8 +17,82 @@ export type VehicleOwnership = "SLUZBENO" | "PRIVATNO";
 
 export type LocoStatus = "EVIDENTIRANO" | "ISPLACENO";
 
+export type UserRole = "global_admin" | "company_admin" | "user";
+
+export interface UserPermissions {
+  canManageTravelOrders: boolean;
+  canApproveTravelOrders: boolean;
+  canManageLoco: boolean;
+  canManageMasterData: boolean;
+  canViewAnalytics: boolean;
+  canManageJoppd: boolean;
+  canBackupRestore: boolean;
+}
+
+export const ALL_PERMISSIONS: UserPermissions = {
+  canManageTravelOrders: true,
+  canApproveTravelOrders: true,
+  canManageLoco: true,
+  canManageMasterData: true,
+  canViewAnalytics: true,
+  canManageJoppd: true,
+  canBackupRestore: true,
+};
+
+export const DEFAULT_USER_PERMISSIONS: UserPermissions = {
+  canManageTravelOrders: true,
+  canApproveTravelOrders: false,
+  canManageLoco: true,
+  canManageMasterData: false,
+  canViewAnalytics: true,
+  canManageJoppd: false,
+  canBackupRestore: false,
+};
+
+export interface Company {
+  id: number;
+  name: string;
+  oib: string;
+  address: string;
+  city: string;
+  iban: string;
+  director_name: string;
+  order_prefix: string;
+  per_diem_full: number;
+  per_diem_half: number;
+  mileage_rate: number;
+  min_distance_km: number;
+  meal_deduction_one_pct: number;
+  meal_deduction_two_pct: number;
+  active: number;
+  created_at: string;
+  employee_count?: number;
+  user_count?: number;
+  order_count?: number;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  role: UserRole;
+  company_id: number | null;
+  company_name?: string | null;
+  permissions: UserPermissions;
+  active: number;
+  created_at: string;
+}
+
+export interface AuthSession {
+  user: User;
+  activeCompanyId: number;
+  activeCompany: Company;
+  companies?: Company[];
+}
+
 export interface CompanySettings {
   id: number;
+  company_id?: number;
   name: string;
   oib: string;
   address: string;
@@ -36,6 +110,7 @@ export interface CompanySettings {
 
 export interface Employee {
   id: number;
+  company_id?: number;
   full_name: string;
   oib: string;
   job_title: string;
@@ -46,6 +121,7 @@ export interface Employee {
 
 export interface Vehicle {
   id: number;
+  company_id?: number;
   ownership_type: VehicleOwnership;
   make_model: string;
   license_plate: string;
@@ -68,6 +144,8 @@ export interface TravelExpense {
 
 export interface TravelOrder {
   id: number;
+  company_id?: number;
+  country_code?: string;
   order_number: string;
   year: number;
   seq_number: number;
@@ -108,6 +186,7 @@ export interface TravelOrder {
 
 export interface LocoTrip {
   id: number;
+  company_id?: number;
   trip_date: string;
   employee_id: number;
   employee_name?: string;
@@ -125,6 +204,26 @@ export interface LocoTrip {
   amount_eur: number;
   status: LocoStatus;
   created_at: string;
+}
+
+export interface CompanyBackupData {
+  company: Company;
+  settings: CompanySettings;
+  employees: Employee[];
+  vehicles: Vehicle[];
+  travelOrders: TravelOrder[];
+  locoTrips: LocoTrip[];
+  users?: Array<Omit<User, "id"> & { id?: number }>;
+}
+
+export interface BackupPayload {
+  version: string;
+  exportedAt: string;
+  exportedBy: string;
+  scope: "company" | "all";
+  companyData?: CompanyBackupData;
+  allCompaniesData?: CompanyBackupData[];
+  globalUsers?: User[];
 }
 
 export interface LegalWarning {

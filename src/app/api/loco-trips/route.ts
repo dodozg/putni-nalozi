@@ -1,14 +1,23 @@
 import { NextResponse } from "next/server";
+import {
+  forbiddenResponse,
+  hasPermission,
+  unauthorizedResponse,
+} from "@/lib/auth";
 import { round2 } from "@/lib/croatian-rules";
 import {
   createLocoTrip,
   getCompanySettings,
+  getSessionFromRequest,
   listLocoTrips,
 } from "@/lib/db";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return NextResponse.json(listLocoTrips());
+    const session = getSessionFromRequest(request);
+    if (!session) return unauthorizedResponse();
+
+    return NextResponse.json(listLocoTrips(session.activeCompanyId));
   } catch (err) {
     console.error("GET /api/loco-trips error:", err);
     return NextResponse.json(
@@ -20,6 +29,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = getSessionFromRequest(request);
+    if (!session) return unauthorizedResponse();
+
+    if (!hasPermission(session, "canManageLoco")) {
+      return forbiddenResponse(
+        "Nemate ovlasti za evidentiranje loko vožnji."
+      );
+    }
+
     const body = await request.json();
     if (
       !body.trip_date ||
@@ -34,11 +52,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const settings = getCompanySettings();
+    const settings = getCompanySettings(session.activeCompanyId);
     const odoStart = Number(body.odometer_start || 0);
     const odoEnd = Number(body.odometer_end || 0);
     const distanceKm =
-      odoEnd > odoStart ? round2(odoEnd - odoStart) : round2(Number(body.distance_km || 0));
+      odoEnd > odoStart
+        ? round2(odoEnd - odoStart)
+        : round2(Number(body.distance_km || 0));
 
     if (distanceKm <= 0) {
       return NextResponse.json(
@@ -50,27 +70,35 @@ export async function POST(request: Request) {
     const rate = settings.mileage_rate;
     const amountEur = round2(distanceKm * rate);
 
-    const created = createLocoTrip({
-      trip_date: body.trip_date,
-      employee_id: Number(body.employee_id),
-      vehicle_id: body.vehicle_id ? Number(body.vehicle_id) : null,
-      origin: String(body.origin).trim(),
-      destination: String(body.destination).trim(),
-      purpose: String(body.purpose).trim(),
-      odometer_start: odoStart,
-      odometer_end: odoEnd,
-      distance_km: distanceKm,
-      rate_eur: rate,
-      amount_eur: amountEur,
-      status: body.status || "EVIDENTIRANO",
-    });
+    const created = createLocoTrip(
+      {
+        trip_date: body.trip_date,
+        employee_id: Number(body.employee_id),
+        vehicle_id: body.vehicle_id ? Number(body.vehicle_id) : null,
+        origin: String(body.origin).trim(),
+        destination: String(body.destination).trim(),
+        purpose: String(body.purpose).trim(),
+        odometer_start: odoStart,
+        odometer_end: odoEnd,
+        distance_km: distanceKm,
+        rate_eur: rate,
+        amount_eur: amountEur,
+        status: body.status || "EVIDENTIRANO",
+      },
+      session.activeCompanyId
+    );
 
     return NextResponse.json(created, { status: 201 });
   } catch (err) {
     console.error("POST /api/loco-trips error:", err);
     return NextResponse.json(
-      { error: "Greška pri spremanju loko vožnje." },
-      { status: 500 }
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Greška pri spremanju loko vožnje.",
+      },
+      { status: 400 }
     );
   }
 }

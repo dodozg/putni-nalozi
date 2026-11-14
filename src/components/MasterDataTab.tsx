@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Building2, Car, Plus, RotateCcw, Save, Users } from "lucide-react";
 import { DEFAULT_CROATIAN_RATES } from "@/lib/croatian-rules";
 import { apiFetch } from "@/lib/demo-seed";
@@ -28,6 +28,10 @@ export default function MasterDataTab({
   const [formSettings, setFormSettings] = useState<CompanySettings>(settings);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState("");
+
+  useEffect(() => {
+    setFormSettings(settings);
+  }, [settings]);
 
   // New employee form
   const [empName, setEmpName] = useState("");
