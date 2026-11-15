@@ -425,3 +425,11 @@ export function resetLoginRateLimit(ip: string, email: string): void {
 export function clearAllLoginRateLimits(): void {
   getRateLimitMap().clear();
 }
+
+export function shouldShowDemoAccounts(
+  nodeEnv: string | undefined = process.env.NODE_ENV
+): boolean {
+  return nodeEnv !== "production";
+}
+
+

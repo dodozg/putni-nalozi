@@ -75,10 +75,7 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ];
 
-const SHOW_DEMO_ACCOUNTS =
-  process.env.NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS === "true" ||
-  (process.env.NODE_ENV !== "production" &&
-    process.env.NEXT_PUBLIC_HIDE_DEMO_ACCOUNTS !== "true");
+const SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== "production";
 
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   const [email, setEmail] = useState(

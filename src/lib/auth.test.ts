@@ -70,6 +70,7 @@ import {
   recordFailedLogin,
   resetLoginRateLimit,
   SESSION_MAX_AGE_MS,
+  shouldShowDemoAccounts,
   verifyPassword,
   verifySessionToken,
 } from "./auth.ts";
@@ -1581,5 +1582,40 @@ describe("Autentikacija, Više-tvrtki (Multi-Tenancy), RBAC i Backup/Restore", (
       assert.equal(listCompanies().length, 2);
       assert.equal(listUsers().length, 4);
     }
+  });
+
+  it("skriva brze demo račune i zadane podatke za prijavu u produkcijskom načinu rada (NODE_ENV=production)", () => {
+    // 1. Development & test environments show demo accounts by default
+    assert.equal(shouldShowDemoAccounts("development"), true);
+    assert.equal(shouldShowDemoAccounts("test"), true);
+
+    // 2. Production hides demo accounts
+    assert.equal(shouldShowDemoAccounts("production"), false);
+
+    // 3. Verify LoginScreen.tsx gates demo cards and pre-filled credentials behind SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== "production"
+    const loginScreenSource = fs.readFileSync(
+      path.join(SRC_ROOT, "components", "LoginScreen.tsx"),
+      "utf8"
+    );
+    assert.ok(
+      loginScreenSource.includes(
+        'const SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== "production";'
+      ),
+      "LoginScreen.tsx must define SHOW_DEMO_ACCOUNTS = process.env.NODE_ENV !== 'production'"
+    );
+    assert.ok(
+      loginScreenSource.includes(
+        'SHOW_DEMO_ACCOUNTS ? "admin@sustav.hr" : ""'
+      ),
+      "LoginScreen.tsx must initialize email to empty string when SHOW_DEMO_ACCOUNTS is false"
+    );
+    assert.ok(
+      loginScreenSource.includes('SHOW_DEMO_ACCOUNTS ? "admin123" : ""'),
+      "LoginScreen.tsx must initialize password to empty string when SHOW_DEMO_ACCOUNTS is false"
+    );
+    assert.ok(
+      loginScreenSource.includes("{SHOW_DEMO_ACCOUNTS && ("),
+      "LoginScreen.tsx must conditionally render demo account cards only when SHOW_DEMO_ACCOUNTS is true"
+    );
   });
 });
