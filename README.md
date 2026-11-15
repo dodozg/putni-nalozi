@@ -58,16 +58,44 @@ Na ekranu prijave možete se prijaviti jednim klikom pomoću ugrađenih demo ra�
 
 ---
 
-## Pokretanje aplikacije
+## Instalacija i pokretanje aplikacije
 
-1. **Preko prečaca na radnoj površini (Desktop):**
-   Dvaput kliknite na **`Pokreni Putne Naloge.bat`** na Desktopu — skripta automatski pokreće poslužitelj i otvara `http://localhost:3000`.
-2. **Kroz terminal:**
-   ```bash
-   npm install
-   npm run dev
-   ```
-   Aplikacija će biti dostupna na `http://localhost:3000`. Prilikom prvog pokretanja automatski se kreira lokalna SQLite baza (`data/putni_nalozi.db`) s početnim demo tvrtkama, podacima i korisničkim računima.
+### Preduvjeti (Sustavski zahtjevi)
+
+- **Node.js `>= 22.5.0`** (preporučeno **Node.js 22 LTS** ili **24**). Aplikacija koristi ugrađeni **`node:sqlite`** modul, što znači da **nisu potrebni** nikakvi vanjski C++ kompajleri (Visual Studio Build Tools, Python, `node-gyp`) niti vanjski SQL poslužitelj — `npm install` radi čisto i brzo na svakom operacijskom sustavu.
+- **Git** (za kloniranje repozitorija).
+
+### Instalacija (prvo preuzimanje na računalo ili poslužitelj)
+
+```bash
+git clone https://github.com/dodozg/putni-nalozi.git
+cd putni-nalozi
+npm install
+```
+
+### Pokretanje aplikacije (3 opcije ovisno o načinu rada)
+
+- **Opcija A (Windows — brzo pokretanje jednim klikom za lokalni rad):**
+  - U korijenskoj mapi projekta nalazi se univerzalna skripta **`pokreni.bat`** (koristi relativnu putanju `%~dp0` pa radi na svakom računalu bez obzira na mapu u koju je projekt preuzet).
+  - Dvoklikom na `pokreni.bat` skripta provjerava jesu li instalirane ovisnosti (`node_modules`), po potrebi pokreće `npm install`, otvara `http://localhost:3000` u pregledniku i pokreće poslužitelj.
+  - *Savjet za prečac na radnoj površini (Desktop):* Desni klik na `pokreni.bat` -> *Prikaži više opcija* -> *Pošalji na* -> *Radna površina (stvori prečac)*.
+- **Opcija B (Terminal — razvojni način rada na Windows / macOS / Linux):**
+  ```bash
+  npm run dev
+  ```
+  Aplikacija je dostupna na `http://localhost:3000`. Prilikom prvog pokretanja automatski se kreira lokalna SQLite baza (`./data/putni_nalozi.db`) s početnim demo tvrtkama, podacima i korisničkim računima.
+- **Opcija C (Produkcijski način rada — za stalni rad na poslužitelju u tvrtki i pristup više korisnika u lokalnoj mreži):**
+  - Kroz terminal:
+    ```bash
+    npm run build
+    npm start
+    ```
+  - Ili jednim klikom na Windows poslužitelju pomoću skripte **`pokreni-produkciju.bat`** (automatski izvršava `npm install` i `npm run build` ako već nisu odrađeni te pokreće produkcijski poslužitelj `npm start`).
+
+### Pristup više korisnika preko lokalne mreže (LAN) / poslužitelja
+
+- Kada je aplikacija pokrenuta na jednom računalu ili internom poslužitelju u uredu, sva ostala računala u istoj lokalnoj mreži (LAN / Wi-Fi) mogu joj istovremeno pristupati putem web preglednika pomoću **mrežnog URL-a** (*Network*) koji Next.js ispiše u terminalu pri pokretanju (npr. `http://192.168.1.50:3000`).
+- Ako se druga računala u mreži ne mogu spojiti, u **Windows vatrozidu (Windows Defender Firewall)** na računalu-poslužitelju potrebno je dopustiti dolazni pristup za **Node.js** ili TCP port **`3000`** unutar privatne mreže.
 
 ## Sigurnosna zaštita sustava (OWASP Top 10)
 

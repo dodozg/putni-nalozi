@@ -7,7 +7,7 @@ Dobrodošli u službenu dokumentaciju i korisnički priručnik web aplikacije **
 ## Sadržaj
 
 1. [Pregled sustava](#1-pregled-sustava)
-2. [Pokretanje aplikacije](#2-pokretanje-aplikacije)
+2. [Instalacija i pokretanje aplikacije](#2-instalacija-i-pokretanje-aplikacije)
 3. [Prijava i korisničke uloge (RBAC)](#3-prijava-i-korisničke-uloge-rbac)
 4. [Upute za korištenje po ulogama i modulima](#4-upute-za-korištenje-po-ulogama-i-modulima)
 5. [Sigurnosna kopija i vraćanje podataka (Backup & Restore)](#5-sigurnosna-kopija-i-vraćanje-podataka-backup--restore)
@@ -44,33 +44,64 @@ Aplikacija **Putni Nalozi HR** omogućuje istovremeno vođenje evidencije služb
 
 ---
 
-## 2. Pokretanje aplikacije
+## 2. Instalacija i pokretanje aplikacije
 
-Aplikaciju možete pokrenuti na dva načina:
+### 2.1. Preduvjeti (Sustavski zahtjevi)
 
-### Način A: Brzo pokretanje preko ikone na radnoj površini (Desktop)
+- **Node.js `>= 22.5.0`** (preporučeno **Node.js 22 LTS** ili **24**).
+  - *Zašto Node.js 22.5+?* Aplikacija koristi službeni ugrađeni **`node:sqlite`** modul koji je dio samog Node.js okruženja. Zahvaljujući tome **nisu potrebni** nikakvi vanjski C++ kompajleri (Visual Studio Build Tools, Python, `node-gyp`) niti vanjski SQL poslužitelj — naredba `npm install` izvršava se čisto i brzo na svakom operacijskom sustavu (Windows, macOS, Linux).
+- **Git** (za kloniranje repozitorija s GitHuba).
 
-1. Na radnoj površini (*Desktop*) pronađite prečac / skriptu **`Pokreni Putne Naloge.bat`** i dvaput kliknite na nju.
-2. Skripta će automatski pokrenuti lokalni poslužitelj aplikacije i otvoriti web preglednik na adresi:
-   ```text
-   http://localhost:3000
-   ```
-3. Dok radite u aplikaciji, ostavite prozor terminala otvorenim u pozadini.
+### 2.2. Instalacija (prvo preuzimanje na računalo ili poslužitelj)
 
-### Način B: Pokretanje kroz terminal (PowerShell / Command Prompt)
+Otvorite terminal (PowerShell, Command Prompt ili Bash) u mapi u koju želite preuzeti projekt i pokrenite:
 
-Ako aplikaciju pokrećete ručno iz razvojnog okruženja ili terminala:
-
-```powershell
-cd C:\Users\Domagoj\putni-nalozi
+```bash
+git clone https://github.com/dodozg/putni-nalozi.git
+cd putni-nalozi
 npm install
+```
+
+### 2.3. Pokretanje aplikacije (3 opcije ovisno o načinu rada)
+
+#### Opcija A (Windows — brzo pokretanje jednim klikom za lokalni rad)
+
+1. U korijenskoj mapi projekta nalazi se univerzalna skripta **`pokreni.bat`** (koristi relativnu putanju `%~dp0` pa radi na svakom Windows računalu bez obzira na to gdje se mapa projekta nalazi).
+2. Dvaput kliknite na **`pokreni.bat`** — skripta automatski provjerava jesu li instalirane ovisnosti (`node_modules/`), po potrebi pri prvom pokretanju izvršava `npm install`, otvara web preglednik na adresi `http://localhost:3000` i pokreće poslužitelj.
+3. Dok radite u aplikaciji, ostavite prozor terminala otvorenim u pozadini.
+4. *Savjet za prečac na radnoj površini (Desktop):* Kliknite desnim klikom miša na datoteku `pokreni.bat` -> *Prikaži više opcija* -> *Pošalji na* -> *Radna površina (stvori prečac)*. Time dobivate ikonu na Desktopu na bilo kojem računalu.
+
+#### Opcija B (Terminal — razvojni način rada na Windows / macOS / Linux)
+
+```bash
 npm run dev
 ```
 
 Nakon pokretanja otvorite preglednik na adresi **`http://localhost:3000`**.
 
+#### Opcija C (Produkcijski način rada — za stalni rad na poslužitelju u tvrtki i pristup više korisnika u lokalnoj mreži)
+
+Za maksimalne performanse pri stalnom višekorisničkom radu u uredu ili na poslužitelju tvrtke:
+
+- **Kroz terminal (Windows / macOS / Linux):**
+  ```bash
+  npm run build
+  npm start
+  ```
+- **Jednim klikom na Windows poslužitelju (`pokreni-produkciju.bat`):**
+  Dvaput kliknite na skriptu **`pokreni-produkciju.bat`** u korijenskoj mapi projekta — skripta po potrebi instalira ovisnosti (`npm install`), gradi optimiziranu produkcijsku verziju (`npm run build`), otvara `http://localhost:3000` i pokreće produkcijski poslužitelj (`npm start`).
+
+### 2.4. Pristup više korisnika preko lokalne mreže (LAN) / poslužitelja
+
+- Aplikacija je višekorisnička i može se pokrenuti na jednom središnjem računalu ili internom poslužitelju u uredu, dok joj svi ostali djelatnici, voditelji i računovodstvo pristupaju sa svojih računala preko lokalne mreže (LAN / Wi-Fi).
+- Pri pokretanju poslužitelja Next.js u terminalu ispisuje dvije adrese:
+  - `Local: http://localhost:3000` (za rad na samom računalu na kojem je poslužitelj pokrenut)
+  - `Network: http://192.168.x.x:3000` (mrežni URL za ostala računala u istoj mreži)
+- Ostali korisnici u uredu u svoj web preglednik upisuju navedeni mrežni URL (npr. `http://192.168.1.50:3000`) i prijavljuju se svojim korisničkim računom.
+- **Napomena za Windows vatrozid (Firewall):** Ako se druga računala u lokalnoj mreži ne mogu spojiti na poslužitelj, u postavkama *Windows Defender Firewalla* na računalu-poslužitelju potrebno je dopustiti dolazni promet za **Node.js** (ili otvoriti dolazni TCP port **`3000`** za privatnu mrežu).
+
 > [!NOTE]
-> Prilikom prvog pokretanja sustav automatski inicijalizira lokalnu SQLite bazu podataka u mapi `data/putni_nalozi.db` te kreira preddefinirane demo tvrtke, zaposlenike, vozila, putne naloge i demo korisničke račune kako biste odmah mogli testirati sve funkcionalnosti.
+> Prilikom prvog pokretanja sustav automatski inicijalizira lokalnu SQLite bazu podataka u mapi `./data/putni_nalozi.db` te kreira preddefinirane demo tvrtke, zaposlenike, vozila, putne naloge i demo korisničke račune kako biste odmah mogli testirati sve funkcionalnosti.
 
 ---
 
@@ -267,11 +298,11 @@ Modul **`Sigurnosna kopija (Backup)`** u lijevom izborniku omogućuje jednostavn
 ### 5.3. Preporuke za redovito sigurnosno kopiranje
 
 - **JSON eksport iz aplikacije:** Preporučuje se jednom tjedno ili nakon svakog mjesečnog obračuna i predaje JOPPD obrasca preuzeti `.json` sigurnosnu kopiju kroz modul *Sigurnosna kopija (Backup)*.
-- **Kopija SQLite datoteke baze podataka:** Svi podaci sustava fizički su pohranjeni u datoteci:
+- **Kopija SQLite datoteke baze podataka:** Svi podaci sustava fizički su pohranjeni u datoteci unutar mape projekta:
   ```text
-  C:\Users\Domagoj\putni-nalozi\data\putni_nalozi.db
+  ./data/putni_nalozi.db
   ```
-  Za dodatnu sigurnost na razini operacijskog sustava možete povremeno kopirati cijelu mapu `data/` na vanjski disk ili u oblak (OneDrive / Google Drive).
+  Za dodatnu sigurnost na razini operacijskog sustava možete povremeno kopirati cijelu mapu `./data/` na vanjski disk ili u oblak (OneDrive / Google Drive).
 
 ---
 
