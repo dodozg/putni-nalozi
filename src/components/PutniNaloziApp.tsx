@@ -756,10 +756,10 @@ export default function PutniNaloziApp({
         </header>
 
         {/* Sticky Top Header Bar (Desktop) */}
-        <header className="no-print hidden lg:flex sticky top-0 z-20 items-center justify-between gap-4 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-3.5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-base font-semibold tracking-tight text-slate-900 truncate">
+        <header className="no-print hidden lg:flex flex-wrap sticky top-0 z-20 items-center justify-between gap-x-4 gap-y-2.5 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 xl:px-8 py-3">
+          <div className="min-w-[240px] flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-base font-semibold tracking-tight text-slate-900 whitespace-nowrap">
                 {activeMeta.title}
               </h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 whitespace-nowrap shrink-0">
@@ -772,19 +772,19 @@ export default function PutniNaloziApp({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
             {/* Active Company Switcher (for Global Admin) or Static Badge */}
             {isGlobalAdmin && allCompanies.length > 0 ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50/60 px-3 py-1.5 text-xs">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs">
                 <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span className="text-purple-900 font-medium whitespace-nowrap">
+                <span className="text-purple-900 font-medium whitespace-nowrap hidden xl:inline">
                   Aktivna tvrtka:
                 </span>
                 <select
                   value={session.activeCompanyId}
                   onChange={(e) => handleSwitchCompany(Number(e.target.value))}
                   aria-label="Odabir aktivne tvrtke"
-                  className="bg-white rounded-lg border border-purple-200 px-2 py-0.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-purple-500 cursor-pointer"
+                  className="bg-white rounded-lg border border-purple-200 px-2 py-0.5 text-xs font-semibold text-slate-900 max-w-[190px] truncate focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
                   {allCompanies.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -795,7 +795,7 @@ export default function PutniNaloziApp({
               </div>
             ) : (
               <div
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 max-w-[220px]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 max-w-[200px]"
                 title={`${settings.name} (OIB: ${settings.oib})`}
               >
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -804,16 +804,16 @@ export default function PutniNaloziApp({
             )}
 
             {/* Logged-in User & Role Badge */}
-            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs">
-              <span className="font-semibold text-slate-800 truncate max-w-[140px]">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs">
+              <span className="font-semibold text-slate-800 truncate max-w-[130px]">
                 {session.user.full_name}
               </span>
               <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${
                   ROLE_HEADER_BADGE[session.user.role]
                 }`}
               >
-                <UserCheck className="w-3 h-3" />
+                <UserCheck className="w-3 h-3 shrink-0" />
                 {ROLE_HEADER_LABELS[session.user.role]}
               </span>
             </div>
@@ -822,9 +822,9 @@ export default function PutniNaloziApp({
               <button
                 type="button"
                 onClick={openNewOrder}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3.5 py-2 text-xs font-semibold shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer whitespace-nowrap"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5 shrink-0" />
                 <span>Novi putni nalog</span>
               </button>
             )}
@@ -833,9 +833,9 @@ export default function PutniNaloziApp({
               type="button"
               onClick={handleLogout}
               title="Odjava iz sustava"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 px-3 py-2 text-xs font-medium transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 px-2.5 py-1.5 text-xs font-medium transition cursor-pointer whitespace-nowrap"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span>Odjava</span>
             </button>
           </div>
