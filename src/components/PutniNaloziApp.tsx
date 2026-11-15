@@ -566,10 +566,10 @@ export default function PutniNaloziApp({
         </div>
 
         {/* Grouped Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+        <nav className="flex-1 px-3 py-3 space-y-3.5 overflow-y-auto">
           {navGroups.map((group) => (
             <div key={group.title} className="space-y-1">
-              <div className="px-2.5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <div className="px-2.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 {group.title}
               </div>
               {group.items.map((item) => {
@@ -580,7 +580,7 @@ export default function PutniNaloziApp({
                     key={item.id}
                     type="button"
                     onClick={() => switchTab(item.id)}
-                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
+                    className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
                       isActive
                         ? "bg-white/10 text-white ring-1 ring-white/15 shadow-xs"
                         : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-100"
@@ -675,9 +675,9 @@ export default function PutniNaloziApp({
 
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-64 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="no-print lg:hidden bg-slate-950 text-slate-100 px-4 py-3 sticky top-0 z-30 border-b border-slate-800 space-y-2.5">
-          <div className="flex items-center justify-between gap-2">
+        {/* Mobile & Tablet Header (Responsive multi-row without scrollbar) */}
+        <header className="no-print lg:hidden bg-slate-950 text-slate-100 px-3.5 sm:px-5 py-3 sticky top-0 z-30 border-b border-slate-800 space-y-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
                 <Briefcase className="w-4 h-4 text-white" />
@@ -692,7 +692,7 @@ export default function PutniNaloziApp({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5 shrink-0">
               {effectivePermissions.canManageTravelOrders && (
                 <button
                   type="button"
@@ -700,7 +700,7 @@ export default function PutniNaloziApp({
                   className="inline-flex items-center gap-1 rounded-xl bg-blue-600 hover:bg-blue-700 px-2.5 py-1.5 text-xs font-semibold text-white transition cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Novi</span>
+                  <span>Novi nalog</span>
                 </button>
               )}
               <button
@@ -715,14 +715,14 @@ export default function PutniNaloziApp({
           </div>
 
           {isGlobalAdmin && allCompanies.length > 0 && (
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <span className="text-[11px] text-slate-400 shrink-0">
                 Aktivna tvrtka:
               </span>
               <select
                 value={session.activeCompanyId}
                 onChange={(e) => handleSwitchCompany(Number(e.target.value))}
-                className="flex-1 rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs text-white"
+                className="flex-1 min-w-[180px] rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1 text-xs text-white"
               >
                 {allCompanies.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -733,37 +733,59 @@ export default function PutniNaloziApp({
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 pt-2 border-t border-white/10 overflow-x-auto pb-0.5">
+          {/* Responsive 2-row grid menu without any horizontal scrollbar */}
+          <nav
+            aria-label="Glavna navigacija"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-2.5 border-t border-white/10"
+          >
             {flatNavItems.map((item) => {
+              const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => switchTab(item.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap shrink-0 transition cursor-pointer ${
+                  className={`flex items-center justify-between gap-1.5 px-2.5 py-2 rounded-xl text-xs font-medium transition cursor-pointer min-w-0 ${
                     isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-slate-300 hover:bg-white/10"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-slate-900/90 text-slate-300 hover:bg-white/10 hover:text-white border border-white/5"
                   }`}
                 >
-                  {item.label}
-                  {item.badge !== undefined ? ` (${item.badge})` : ""}
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <Icon
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        isActive ? "text-white" : "text-slate-400"
+                      }`}
+                    />
+                    <span className="truncate">{item.label}</span>
+                  </span>
+                  {item.badge !== undefined && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums shrink-0 ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-slate-800 text-slate-300"
+                      }`}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </button>
               );
             })}
-          </div>
+          </nav>
         </header>
 
         {/* Sticky Top Header Bar (Desktop) */}
-        <header className="no-print hidden lg:flex flex-wrap sticky top-0 z-20 items-center justify-between gap-x-4 gap-y-2.5 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 xl:px-8 py-3">
-          <div className="min-w-[240px] flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-base font-semibold tracking-tight text-slate-900 whitespace-nowrap">
+        <header className="no-print hidden lg:flex lg:flex-wrap sticky top-0 z-20 min-h-20 h-auto py-3 items-center justify-between gap-x-6 gap-y-2.5 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-6 xl:px-8">
+          <div className="min-w-[280px] flex-1 overflow-hidden">
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <h1 className="text-base font-semibold tracking-tight text-slate-900 truncate max-w-full">
                 {activeMeta.title}
               </h1>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 whitespace-nowrap shrink-0">
-                <ShieldCheck className="w-3 h-3" />
+                <ShieldCheck className="w-3 h-3 shrink-0" />
                 Službene stope RH · Neoporezivo
               </span>
             </div>
@@ -772,19 +794,19 @@ export default function PutniNaloziApp({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0 ml-auto">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             {/* Active Company Switcher (for Global Admin) or Static Badge */}
             {isGlobalAdmin && allCompanies.length > 0 ? (
-              <div className="inline-flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-xs">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50/60 px-2.5 py-1.5 text-xs shrink-0">
                 <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span className="text-purple-900 font-medium whitespace-nowrap hidden xl:inline">
+                <span className="text-purple-900 font-medium whitespace-nowrap">
                   Aktivna tvrtka:
                 </span>
                 <select
                   value={session.activeCompanyId}
                   onChange={(e) => handleSwitchCompany(Number(e.target.value))}
                   aria-label="Odabir aktivne tvrtke"
-                  className="bg-white rounded-lg border border-purple-200 px-2 py-0.5 text-xs font-semibold text-slate-900 max-w-[190px] truncate focus:outline-none focus:border-purple-500 cursor-pointer"
+                  className="bg-white rounded-lg border border-purple-200 px-2 py-0.5 text-xs font-semibold text-slate-900 max-w-[200px] xl:max-w-[240px] truncate focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
                   {allCompanies.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -795,7 +817,7 @@ export default function PutniNaloziApp({
               </div>
             ) : (
               <div
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 max-w-[200px]"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 max-w-[220px] shrink-0"
                 title={`${settings.name} (OIB: ${settings.oib})`}
               >
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -804,12 +826,12 @@ export default function PutniNaloziApp({
             )}
 
             {/* Logged-in User & Role Badge */}
-            <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs">
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs shrink-0">
               <span className="font-semibold text-slate-800 truncate max-w-[130px]">
                 {session.user.full_name}
               </span>
               <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${
+                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap shrink-0 ${
                   ROLE_HEADER_BADGE[session.user.role]
                 }`}
               >
@@ -822,7 +844,7 @@ export default function PutniNaloziApp({
               <button
                 type="button"
                 onClick={openNewOrder}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-3 py-1.5 text-xs font-semibold shadow-xs transition cursor-pointer whitespace-nowrap shrink-0"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
                 <span>Novi putni nalog</span>
@@ -833,7 +855,7 @@ export default function PutniNaloziApp({
               type="button"
               onClick={handleLogout}
               title="Odjava iz sustava"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 px-2.5 py-1.5 text-xs font-medium transition cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-red-50 hover:border-red-200 hover:text-red-700 text-slate-700 px-2.5 py-1.5 text-xs font-medium transition cursor-pointer whitespace-nowrap shrink-0"
             >
               <LogOut className="w-3.5 h-3.5 shrink-0" />
               <span>Odjava</span>

@@ -544,7 +544,7 @@ export default function UserCompanyAdminTab({
         </div>
 
         {isGlobalAdmin && (
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+          <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button
               type="button"
               onClick={() => setSubTab("USERS")}
