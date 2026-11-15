@@ -39,7 +39,7 @@ Moderna **multi-tenant (više tvrtki)** i **višekorisnička (RBAC)** web aplika
 
 ## Preddefinirani demo računi za testiranje
 
-Na ekranu prijave možete se prijaviti jednim klikom pomoću ugrađenih demo računa:
+U razvojnom načinu rada (`npm run dev` / `pokreni.bat`) na ekranu prijave prikazane su kartice za brzu prijavu jednim klikom pomoću ugrađenih demo računa. U **produkcijskom načinu rada** (`npm run build && npm start` / `pokreni-produkciju.bat`, ili uz `NEXT_PUBLIC_HIDE_DEMO_ACCOUNTS=true`) kartice s demo računima na ekranu prijave **automatski su skrivene**, a prije produkcijskog korištenja u tvrtki preporučuje se promijeniti zadanu lozinku glavnog administratora (`admin@sustav.hr`) te deaktivirati ili obrisati testne demo račune.
 
 | Uloga | Tvrtka | E-mail | Lozinka |
 | :--- | :--- | :--- | :--- |
@@ -91,6 +91,7 @@ npm install
     npm start
     ```
   - Ili jednim klikom na Windows poslužitelju pomoću skripte **`pokreni-produkciju.bat`** (automatski izvršava `npm install` i `npm run build` ako već nisu odrađeni te pokreće produkcijski poslužitelj `npm start`).
+  - *Sigurnosna napomena za produkciju:* U produkcijskom načinu rada (`NODE_ENV=production`) kartice za brzu prijavu demo računima na ekranu prijave automatski su skrivene. Prije početka produkcijskog rada prijavite se kao `admin@sustav.hr` i promijenite zadanu lozinku (`admin123`) u modulu *Tvrtke, korisnici i prava*.
 
 ### Pristup više korisnika preko lokalne mreže (LAN) / poslužitelja
 

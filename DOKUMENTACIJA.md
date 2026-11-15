@@ -90,6 +90,7 @@ Za maksimalne performanse pri stalnom višekorisničkom radu u uredu ili na posl
   ```
 - **Jednim klikom na Windows poslužitelju (`pokreni-produkciju.bat`):**
   Dvaput kliknite na skriptu **`pokreni-produkciju.bat`** u korijenskoj mapi projekta — skripta po potrebi instalira ovisnosti (`npm install`), gradi optimiziranu produkcijsku verziju (`npm run build`), otvara `http://localhost:3000` i pokreće produkcijski poslužitelj (`npm start`).
+- **Automatsko skrivanje demo kartica u produkciji:** U produkcijskom načinu rada (`NODE_ENV=production` ili uz postavljenu varijablu `NEXT_PUBLIC_HIDE_DEMO_ACCOUNTS=true`) kartice za brzu prijavu jednim klikom na ekranu prijave **automatski su skrivene**. Prije produkcijskog rada u tvrtki obavezno promijenite početnu lozinku računa `admin@sustav.hr` te deaktivirajte ili obrišite demo korisnike.
 
 ### 2.4. Pristup više korisnika preko lokalne mreže (LAN) / poslužitelja
 
@@ -107,7 +108,7 @@ Za maksimalne performanse pri stalnom višekorisničkom radu u uredu ili na posl
 
 ## 3. Prijava i korisničke uloge (RBAC)
 
-При otvaranju aplikacije prikazuje se zaslon **`Prijava u sustav Putni Nalozi`**. Prijaviti se možete unosom e-mail adrese i lozinke ili jednim klikom na neku od kartica u sekciji **„Demo računi za testiranje uloga i tvrtki“**.
+Pri otvaranju aplikacije prikazuje se zaslon **`Prijava u sustav Putni Nalozi`**. Prijaviti se možete unosom e-mail adrese i lozinke, a u razvojnom načinu rada (`npm run dev` / `pokreni.bat`) i jednim klikom na neku od kartica u sekciji **„Demo računi za testiranje uloga i tvrtki“**. U produkcijskom načinu rada (`npm run build && npm start` / `pokreni-produkciju.bat`) sekcija s demo karticama automatski je skrivena (a prije produkcijske upotrebe preporučuje se promijeniti zadanu lozinku administratora `admin@sustav.hr`).
 
 ### 3.1. Pregled korisničkih uloga
 

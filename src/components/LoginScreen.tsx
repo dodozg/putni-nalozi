@@ -75,9 +75,18 @@ const DEMO_ACCOUNTS: DemoAccount[] = [
   },
 ];
 
+const SHOW_DEMO_ACCOUNTS =
+  process.env.NEXT_PUBLIC_SHOW_DEMO_ACCOUNTS === "true" ||
+  (process.env.NODE_ENV !== "production" &&
+    process.env.NEXT_PUBLIC_HIDE_DEMO_ACCOUNTS !== "true");
+
 export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
-  const [email, setEmail] = useState("admin@sustav.hr");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState(
+    SHOW_DEMO_ACCOUNTS ? "admin@sustav.hr" : ""
+  );
+  const [password, setPassword] = useState(
+    SHOW_DEMO_ACCOUNTS ? "admin123" : ""
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -127,9 +136,19 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
       <div className="pointer-events-none absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-600/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-600/20 blur-3xl" />
 
-      <div className="max-w-5xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start relative z-10">
+      <div
+        className={`${
+          SHOW_DEMO_ACCOUNTS
+            ? "max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+            : "max-w-md"
+        } w-full mx-auto relative z-10`}
+      >
         {/* Left Column: Login Card */}
-        <div className="lg:col-span-5 bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 p-6 sm:p-8 space-y-6">
+        <div
+          className={`${
+            SHOW_DEMO_ACCOUNTS ? "lg:col-span-5" : ""
+          } bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200/80 p-6 sm:p-8 space-y-6`}
+        >
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-md shadow-blue-600/25 shrink-0">
               <Briefcase className="w-5 h-5 text-white" />
@@ -222,93 +241,95 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           </div>
         </div>
 
-        {/* Right Column: 1-Click Demo Accounts */}
-        <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
-          <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Brza prijava jednim klikom</span>
+        {/* Right Column: 1-Click Demo Accounts (Development / Demo Mode Only) */}
+        {SHOW_DEMO_ACCOUNTS && (
+          <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-5 shadow-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Brza prijava jednim klikom</span>
+                </div>
+                <h2 className="text-lg font-bold text-white">
+                  Demo računi za testiranje uloga i tvrtki
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Kliknite na bilo koji račun ispod za trenutnu prijavu i
+                  testiranje višekorisničkog rada i izolacije tvrtki.
+                </p>
               </div>
-              <h2 className="text-lg font-bold text-white">
-                Demo računi za testiranje uloga i tvrtki
-              </h2>
-              <p className="text-xs text-slate-400">
-                Kliknite na bilo koji račun ispod za trenutnu prijavu i
-                testiranje višekorisničkog rada i izolacije tvrtki.
-              </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {DEMO_ACCOUNTS.map((acc) => {
-              const isSelected = email === acc.email;
-              return (
-                <button
-                  key={acc.email}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => handleQuickDemoLogin(acc)}
-                  className={`text-left rounded-2xl p-4 border transition-all flex flex-col justify-between gap-3 cursor-pointer group ${
-                    isSelected
-                      ? "bg-slate-800/90 border-blue-500/80 ring-1 ring-blue-500/40"
-                      : "bg-slate-950/60 border-slate-800 hover:bg-slate-800/60 hover:border-slate-700"
-                  }`}
-                >
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${acc.roleColor}`}
-                      >
-                        <UserCheck className="w-3 h-3" />
-                        {acc.roleBadge}
-                      </span>
-                      <span className="text-[11px] font-semibold text-blue-400 group-hover:translate-x-0.5 transition-transform">
-                        Prijavi se &rarr;
-                      </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {DEMO_ACCOUNTS.map((acc) => {
+                const isSelected = email === acc.email;
+                return (
+                  <button
+                    key={acc.email}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => handleQuickDemoLogin(acc)}
+                    className={`text-left rounded-2xl p-4 border transition-all flex flex-col justify-between gap-3 cursor-pointer group ${
+                      isSelected
+                        ? "bg-slate-800/90 border-blue-500/80 ring-1 ring-blue-500/40"
+                        : "bg-slate-950/60 border-slate-800 hover:bg-slate-800/60 hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${acc.roleColor}`}
+                        >
+                          <UserCheck className="w-3 h-3" />
+                          {acc.roleBadge}
+                        </span>
+                        <span className="text-[11px] font-semibold text-blue-400 group-hover:translate-x-0.5 transition-transform">
+                          Prijavi se &rarr;
+                        </span>
+                      </div>
+
+                      <div>
+                        <div className="font-bold text-sm text-white">
+                          {acc.label}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-300 mt-0.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{acc.companyName}</span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        {acc.description}
+                      </p>
                     </div>
 
-                    <div>
-                      <div className="font-bold text-sm text-white">
-                        {acc.label}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-300 mt-0.5">
-                        <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{acc.companyName}</span>
-                      </div>
+                    <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
+                      <span className="truncate text-slate-300">{acc.email}</span>
+                      <span className="inline-flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded text-slate-400 border border-slate-800 shrink-0">
+                        <KeyRound className="w-3 h-3" />
+                        {acc.password}
+                      </span>
                     </div>
+                  </button>
+                );
+              })}
+            </div>
 
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                      {acc.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[11px] font-mono text-slate-400">
-                    <span className="truncate text-slate-300">{acc.email}</span>
-                    <span className="inline-flex items-center gap-1 bg-slate-900 px-2 py-0.5 rounded text-slate-400 border border-slate-800 shrink-0">
-                      <KeyRound className="w-3 h-3" />
-                      {acc.password}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="rounded-2xl bg-slate-950/80 border border-slate-800/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
-            <div className="flex items-center gap-2.5">
-              <Users className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>
-                Možete se u svakom trenutku odjaviti u gornjem desnom kutu i
-                prebaciti na drugi demo račun.
+            <div className="rounded-2xl bg-slate-950/80 border border-slate-800/90 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-400">
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-blue-400 shrink-0" />
+                <span>
+                  Možete se u svakom trenutku odjaviti u gornjem desnom kutu i
+                  prebaciti na drugi demo račun.
+                </span>
+              </div>
+              <span className="inline-flex items-center gap-1 text-emerald-400 font-medium shrink-0">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Spremno za rad
               </span>
             </div>
-            <span className="inline-flex items-center gap-1 text-emerald-400 font-medium shrink-0">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Spremno za rad
-            </span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
